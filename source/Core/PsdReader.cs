@@ -71,40 +71,100 @@ public sealed class PsdReader : IDisposable
     public byte[] Png(PsdLayer l)
     {
         if(l.Width<=0||l.Height<=0||l.Width>30000||l.Height>30000||(long)l.Width*l.Height>180_000_000)throw new InvalidDataException("Layer raster dimensions exceed supported limits.");
-        int pixels=checked(l.Width*l.Height);var rgba=new byte[checked(pixels*4)];for(int i=3;i<rgba.Length;i+=4)rgba[i]=255;
-        foreach(var ch in l.Channels.Where(c=>c.Id is >=-1 and <=2))
+        var channels=new List<ChannelRows>();
+        try
         {
-            stream.Position=ch.Offset;int compression=U16();byte[] data=new byte[pixels];
-            if(compression==0)stream.ReadExactly(data);
-            else if(compression==1)
+            foreach(var ch in l.Channels.Where(c=>c.Id is >=-1 and <=2))channels.Add(new ChannelRows(stream.Name,ch.Id,ch.Offset,ch.Length,l.Width,l.Height));
+            if(!channels.Any(c=>c.Id==0)||!channels.Any(c=>c.Id==1)||!channels.Any(c=>c.Id==2))throw new InvalidDataException("Layer has no complete RGB raster.");
+            return EncodeRows(l.Width,l.Height,(y,rgba)=>
             {
-                var sizes=new ushort[l.Height];for(int y=0;y<l.Height;y++)sizes[y]=U16();
-                for(int y=0;y<l.Height;y++)
-                {
-                    var row=reader.ReadBytes(sizes[y]);int src=0,dst=y*l.Width,end=dst+l.Width;
-                    while(src<row.Length){sbyte code=unchecked((sbyte)row[src++]);if(code>=0){int n=code+1;if(src+n>row.Length||dst+n>end)throw new InvalidDataException("Invalid PSD RLE literal.");row.AsSpan(src,n).CopyTo(data.AsSpan(dst));src+=n;dst+=n;}else if(code!=-128){int n=1-code;if(src>=row.Length||dst+n>end)throw new InvalidDataException("Invalid PSD RLE repeat.");data.AsSpan(dst,n).Fill(row[src++]);dst+=n;}}
-                    if(dst!=end)throw new InvalidDataException("Truncated PSD RLE row.");
-                }
-            }
-            else if(compression is 2 or 3)
-            {
-                var packed=reader.ReadBytes(checked((int)ch.Length-2));using var z=new ZLibStream(new MemoryStream(packed),CompressionMode.Decompress);z.ReadExactly(data);
-                if(compression==3)for(int y=0;y<l.Height;y++)for(int x=1;x<l.Width;x++)data[y*l.Width+x]=unchecked((byte)(data[y*l.Width+x]+data[y*l.Width+x-1]));
-            }
-            else throw new InvalidDataException("Unsupported PSD channel compression.");
-            if(stream.Position>ch.Offset+ch.Length)throw new InvalidDataException("PSD channel exceeds declared size.");
-            int component=ch.Id==-1?3:ch.Id;for(int i=0;i<pixels;i++)rgba[i*4+component]=data[i];
+                System.Array.Clear(rgba);for(int x=3;x<rgba.Length;x+=4)rgba[x]=255;
+                foreach(var channel in channels){channel.ReadRow();int component=channel.Id==-1?3:channel.Id;for(int x=0;x<l.Width;x++)rgba[x*4+component]=channel.Row[x];}
+            },ColorProfile);
         }
-        if(!l.Channels.Any(c=>c.Id==0)||!l.Channels.Any(c=>c.Id==1)||!l.Channels.Any(c=>c.Id==2))throw new InvalidDataException("Layer has no complete RGB raster.");
-        return EncodePng(l.Width,l.Height,rgba,ColorProfile);
+        finally{foreach(var c in channels)c.Dispose();}
     }
-    public static byte[] EncodePng(int width,int height,byte[] rgba,byte[]? profile=null)
+    sealed class ChannelRows : IDisposable
+    {
+        readonly FileStream file;readonly Stream decoded;readonly int compression;readonly ushort[]? sizes;int row;
+        public short Id {get;} public byte[] Row {get;}
+        readonly byte[] packed=new byte[65535];
+        public ChannelRows(string path,short id,long offset,uint length,int width,int height)
+        {
+            Id=id;Row=new byte[width];file=File.OpenRead(path);decoded=file;
+            try
+            {
+                if(length<2||offset<0||offset+length>file.Length)throw new InvalidDataException("Invalid PSD channel bounds.");
+                file.Position=offset;Span<byte> n=stackalloc byte[2];file.ReadExactly(n);compression=BinaryPrimitives.ReadUInt16BigEndian(n);
+                if(compression==0){if((long)width*height>length-2)throw new InvalidDataException("Truncated raw PSD channel.");}
+                else if(compression==1)
+                {
+                    sizes=new ushort[height];long expected=2+height*2L;
+                    for(int y=0;y<height;y++){file.ReadExactly(n);sizes[y]=BinaryPrimitives.ReadUInt16BigEndian(n);expected+=sizes[y];}
+                    if(expected>length)throw new InvalidDataException("PSD RLE data exceeds channel length.");
+                }
+                else if(compression is 2 or 3)decoded=new ZLibStream(new LimitedReadStream(file,length-2),CompressionMode.Decompress);
+                else throw new InvalidDataException("Unsupported PSD channel compression.");
+            }
+            catch{file.Dispose();throw;}
+        }
+        public void ReadRow()
+        {
+            if(compression==1)
+            {
+                int length=sizes![row++];file.ReadExactly(packed.AsSpan(0,length));int src=0,dst=0;
+                while(src<length)
+                {
+                    sbyte code=unchecked((sbyte)packed[src++]);
+                    if(code>=0){int n=code+1;if(src+n>length||dst+n>Row.Length)throw new InvalidDataException("Invalid PSD RLE literal.");packed.AsSpan(src,n).CopyTo(Row.AsSpan(dst));src+=n;dst+=n;}
+                    else if(code!=-128){int n=1-code;if(src>=length||dst+n>Row.Length)throw new InvalidDataException("Invalid PSD RLE repeat.");Row.AsSpan(dst,n).Fill(packed[src++]);dst+=n;}
+                }
+                if(dst!=Row.Length)throw new InvalidDataException("Truncated PSD RLE row.");
+            }
+            else
+            {
+                decoded.ReadExactly(Row);
+                if(compression==3)for(int x=1;x<Row.Length;x++)Row[x]=unchecked((byte)(Row[x]+Row[x-1]));
+            }
+        }
+        public void Dispose(){if(decoded!=file)decoded.Dispose();file.Dispose();}
+    }
+    sealed class LimitedReadStream(Stream source,long remaining) : Stream
+    {
+        public override int Read(byte[] b,int o,int n){int count=source.Read(b,o,(int)Math.Min(n,remaining));remaining-=count;return count;}
+        public override int Read(Span<byte> b){int count=source.Read(b[..(int)Math.Min(b.Length,remaining)]);remaining-=count;return count;}
+        public override bool CanRead=>true;public override bool CanWrite=>false;public override bool CanSeek=>false;
+        public override long Length=>throw new NotSupportedException();public override long Position{get=>throw new NotSupportedException();set=>throw new NotSupportedException();}
+        public override void Flush(){}public override long Seek(long o,SeekOrigin s)=>throw new NotSupportedException();public override void SetLength(long v)=>throw new NotSupportedException();public override void Write(byte[] b,int o,int n)=>throw new NotSupportedException();
+    }
+    public static byte[] EncodePng(int width,int height,byte[] rgba,byte[]? profile=null)=>EncodeRows(width,height,(y,row)=>rgba.AsSpan(y*width*4,width*4).CopyTo(row),profile);
+    static byte[] EncodeRows(int width,int height,Action<int,byte[]> fill,byte[]? profile)
     {
         using var output=new MemoryStream();output.Write(new byte[]{137,80,78,71,13,10,26,10});
-        void Chunk(string tag,byte[] data){Span<byte> n=stackalloc byte[4];BinaryPrimitives.WriteInt32BigEndian(n,data.Length);output.Write(n);var t=Encoding.ASCII.GetBytes(tag);output.Write(t);output.Write(data);uint crc=0xffffffff;foreach(byte b in t.Concat(data)){crc^=b;for(int k=0;k<8;k++)crc=(crc>>1)^((crc&1)!=0?0xedb88320u:0);}BinaryPrimitives.WriteUInt32BigEndian(n,~crc);output.Write(n);}
-        var header=new byte[13];BinaryPrimitives.WriteInt32BigEndian(header,width);BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(4),height);header[8]=8;header[9]=6;Chunk("IHDR",header);
-        if(profile!=null){using var icc=new MemoryStream();icc.Write(Encoding.ASCII.GetBytes("PSD profile\0\0"));using(var z=new ZLibStream(icc,CompressionLevel.Optimal,true))z.Write(profile);Chunk("iCCP",icc.ToArray());}
-        using var packed=new MemoryStream();using(var z=new ZLibStream(packed,CompressionLevel.Fastest,true))for(int y=0;y<height;y++){z.WriteByte(0);z.Write(rgba,y*width*4,width*4);}Chunk("IDAT",packed.ToArray());Chunk("IEND",[]);return output.ToArray();
+        void Chunk(string tag,byte[] data,int count)
+        {
+            Span<byte> n=stackalloc byte[4];BinaryPrimitives.WriteInt32BigEndian(n,count);output.Write(n);var t=Encoding.ASCII.GetBytes(tag);output.Write(t);output.Write(data,0,count);
+            uint crc=0xffffffff;void Add(byte b){crc^=b;for(int k=0;k<8;k++)crc=(crc>>1)^((crc&1)!=0?0xedb88320u:0);}
+            foreach(byte b in t)Add(b);for(int i=0;i<count;i++)Add(data[i]);BinaryPrimitives.WriteUInt32BigEndian(n,~crc);output.Write(n);
+        }
+        var header=new byte[13];BinaryPrimitives.WriteInt32BigEndian(header,width);BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(4),height);header[8]=8;header[9]=6;Chunk("IHDR",header,header.Length);
+        if(profile!=null){using var icc=new MemoryStream();icc.Write(Encoding.ASCII.GetBytes("PSD profile\0\0"));using(var z=new ZLibStream(icc,CompressionLevel.Optimal,true))z.Write(profile);var data=icc.ToArray();Chunk("iCCP",data,data.Length);}
+        using(var chunks=new PngChunks((b,n)=>Chunk("IDAT",b,n)))
+        {
+            using(var z=new ZLibStream(chunks,CompressionLevel.Fastest,true))
+            {var row=new byte[checked(width*4)];for(int y=0;y<height;y++){fill(y,row);z.WriteByte(0);z.Write(row);}}
+        }
+        Chunk("IEND",[],0);return output.ToArray();
+    }
+    sealed class PngChunks(Action<byte[],int> emit) : Stream
+    {
+        readonly byte[] buffer=new byte[65536];int used;
+        public override void Write(byte[] b,int o,int n)=>Write(b.AsSpan(o,n));
+        public override void Write(ReadOnlySpan<byte> data){while(!data.IsEmpty){int n=Math.Min(data.Length,buffer.Length-used);data[..n].CopyTo(buffer.AsSpan(used));used+=n;data=data[n..];if(used==buffer.Length)Flush();}}
+        public override void Flush(){if(used>0){emit(buffer,used);used=0;}}
+        protected override void Dispose(bool disposing){if(disposing)Flush();base.Dispose(disposing);}
+        public override bool CanWrite=>true;public override bool CanRead=>false;public override bool CanSeek=>false;public override long Length=>throw new NotSupportedException();public override long Position{get=>throw new NotSupportedException();set=>throw new NotSupportedException();}
+        public override int Read(byte[] b,int o,int n)=>throw new NotSupportedException();public override long Seek(long o,SeekOrigin s)=>throw new NotSupportedException();public override void SetLength(long v)=>throw new NotSupportedException();
     }
     long End(long size){long end=checked(stream.Position+size);if(size<0||end>stream.Length)throw new InvalidDataException("Truncated PSD section.");return end;}
     void Skip(long n)=>stream.Position=End(n);

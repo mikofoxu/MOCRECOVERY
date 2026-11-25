@@ -39,7 +39,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.4.3";
+        Text="MOC3 Recovery 1.4.4";
         ClientSize=new Size(960,800);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -175,7 +175,7 @@ public sealed class MainWindow : Form
             report.Text=await Task.Run(()=>Recovery.ConvertAsync(selected,engine,replace,updates));
             status.Text="Saved "+Path.GetFileName(plan.Output)+" — review the report below.";
         }
-        catch(Exception e){status.Text="Recovery failed.";report.Text="RECOVERY FAILED\r\n\r\n"+e.Message;MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+        catch(Exception e){status.Text="Recovery failed.";report.Text="RECOVERY FAILED\r\n\r\n"+e.ToString();MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally
         {
             inferLinks.Enabled=true;busy=false;progress.Visible=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;

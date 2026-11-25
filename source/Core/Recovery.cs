@@ -126,9 +126,11 @@ public static class Recovery
         Directory.CreateDirectory(outputDir);
         var temp=Path.Combine(outputDir,".moc-recovery-"+Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
+        string stage="Starting recovery";
+        void Stage(string message){stage=message;progress?.Report(message);}
         try
         {
-            progress?.Report("Reading model and reconstructing the editable rig…");
+            Stage("Reading model and reconstructing the editable rig…");
             var textures=new List<string>();var missing=new List<string>();
             // A valid transparent PNG is used at each missing index, preserving later pages.
             var transparent=Path.Combine(temp,"transparent.png");
@@ -148,24 +150,26 @@ public static class Recovery
             await process.WaitForExitAsync();var output=await stdout;var error=await stderr;
             if(process.ExitCode!=0)throw new InvalidDataException("Conversion failed. Existing outputs were not changed.\r\n"+error);
             using var summary=JsonDocument.Parse(output);var s=summary.RootElement;
-            progress?.Report("Restoring physics and parameter groups from companion files…");
+            Stage("Restoring physics and parameter groups from companion files…");
             var enrichment=ProjectEnricher.Apply(staged,plan);
             using(var f=File.OpenRead(staged)){byte[] magic=new byte[4];f.ReadExactly(magic);if(!magic.AsSpan().SequenceEqual("CAFF"u8))throw new InvalidDataException("Engine did not produce a CMO3 archive.");}
-            progress?.Report("Preparing companion motions and checking recovered geometry…");
+            Stage("Preparing companion motions and checking recovered geometry…");
             var extra=Path.Combine(temp,"editor-import");
             using var recovered=JsonDocument.Parse(File.ReadAllBytes(modelJson));
             var companions=CompanionExporter.Export(plan,recovered.RootElement,extra);
             PsdImportResult? psdResult=null;
             if(plan.PsdInput!=null)
             {
-                progress?.Report("Importing optional PSD source artwork… Large layers may take a few minutes.");
+                Stage("Importing optional PSD source artwork… Large layers may take a few minutes.");
                 psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"));
             }
+            Stage("Naming deformers from ArtMeshes…");
             var deformerNames=DeformerNames.NameFromArtMeshes(staged);
+            Stage("Validating recovered project…");
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"));
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.4.3").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.4.4").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -213,7 +217,7 @@ public static class Recovery
             report.AppendLine((psdResult==null?"Original PSD layers were not supplied. ":"Supplied PSD artwork is imported separately; it cannot restore omitted rigging. ")+"Removed mesh geometry, editor-only controls, original GUIDs, deformer labels, authoring history and comments are not fully represented by a MOC3. Exact missing rig object names/counts cannot be determined without the original CMO3.");
             report.AppendLine("Rig texture links use the recovered atlas pages. Optional PSD source images are imported separately without automatic texture relinking. Advanced/version-specific features may not round-trip exactly.");
             report.AppendLine("A valid archive does not prove visual or animated equivalence. Open in Cubism Editor and check the rig before use.");
-            progress?.Report("Preserving companion files and writing the report…");
+            Stage("Preserving companion files and writing the report…");
             var zip=Path.Combine(temp,"assets.zip");
             using(var archive=ZipFile.Open(zip,ZipArchiveMode.Create))
             {
@@ -257,6 +261,7 @@ public static class Recovery
             if(backups.Count>0)report.AppendLine("Previous output files were retained as timestamped .bak files in the same folder.");
             return report.ToString();
         }
+        catch(OutOfMemoryException e){throw new IOException("Memory allocation failed during: "+stage+"\r\nClose other memory-heavy apps and retry. If a PSD was selected, No PSD can be used temporarily. Existing outputs were not replaced.",e);}
         finally {try{Directory.Delete(temp,true);}catch(IOException){}catch(UnauthorizedAccessException){}}
     }
 }

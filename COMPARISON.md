@@ -71,3 +71,8 @@ All 37 stored RedFoxGirl deformer IDs are now preserved as IDs and display label
 
 ## Version 1.4.3
 ArtMesh-derived naming changes only deformer display labels. RedFoxGirl: 14 labels derived, 23 ambiguous labels retained; all 37 IDs unchanged. Warp21 displays as tail. Tests verify unchanged non-name XML data and existing recovery checks.
+
+## Version 1.4.4
+Replaced full-raster PSD allocations with row decoding and chunked PNG encoding. CAFF reads/writes no longer allocate full archive copies. Full recovery and PSD integration checks pass; all 35 RedFoxGirl PSD layers have identical decompressed scanlines, dimensions and ICC metadata versus v1.4.3, and all PNG CRCs validate.
+
+Measured Linux .NET 10 process peak RSS for all-layer PSD extraction: v1.4.3 3,619,140 KiB; v1.4.4 192,236 KiB (94.7% lower). Full v1.4.4 recovery with the supplied PSD: 513,848 KiB. These are test measurements, not Windows memory guarantees. The user's exact Windows OutOfMemoryException was not reproduced; the high-allocation paths were eliminated and failure reports now include stage and stack trace. Windows GUI and Cubism visual testing remain for the user.

@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.4.3
+# MOC3 Recovery for Windows — 1.4.4
 
-Version 1.4.3 (includes the responsible-use notice and PSD limitations).
+Version 1.4.4 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -160,3 +160,9 @@ Stored deformer IDs remain unchanged. A deformer controlling ArtMeshes with one 
 This naming pass runs after optional PSD import, so it uses the final ArtMesh labels. It changes only deformer localName fields, not IDs, GUIDs, hierarchy, bindings or geometry. Every change and ambiguous result is listed in the report. These labels are inferred conveniences, not recovered original authoring names. No PSD or original CMO3 is required.
 
 Tests confirm the tail example, all 37 original IDs, unchanged non-name XML data, ambiguous-parent handling and the existing recovery checks. Windows/Cubism display still needs visual confirmation.
+
+## Version 1.4.4 — Lower recovery memory use
+
+PSD channels are decoded one row at a time and PNGs are compressed in chunks, avoiding full-size RGBA and channel buffers. CAFF project reads/writes stream the archive instead of creating additional full-file copies. No downscaling or pixel loss is introduced. PSD remains optional. The executable explicitly targets x64.
+
+If recovery fails, the on-screen report now includes the full exception details; memory errors also identify the recovery stage. Copy that report when reporting an error. Large projects still need memory for their compressed image entries and XML; this is not a fixed memory limit or a guarantee that every project fits.

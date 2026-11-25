@@ -1,0 +1,1 @@
+35 layers: identical decompressed scanlines, dimensions and ICC metadata. All PNG chunk CRCs valid.

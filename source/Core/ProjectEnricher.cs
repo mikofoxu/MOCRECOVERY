@@ -25,6 +25,7 @@ public static class ProjectEnricher
         var parameterGuids=parameters.ToDictionary(k=>k.Key,k=>(string)k.Value.Element("CParameterGuid")!.Attribute("xs.ref")!);
         var sdkTarget=SdkTarget.Apply(doc,plan.Input);
         var notes=new List<string>{"SDK/Cubism compatibility target restored from MOC3: "+sdkTarget+". This does not identify the original Editor build or prove full feature equivalence."};int physics=0,groups=0;
+        notes.Add(DeformerNames.Apply(doc,plan.Input));
         if(plan.DisplayInfo!=null)
         {
             try

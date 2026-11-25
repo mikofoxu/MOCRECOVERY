@@ -63,3 +63,7 @@ Optional PSD import adds source images without changing atlas rig links. RedFoxG
 
 ## Version 1.4.1
 RedFoxGirl MOC3 header version 4 maps to SDK/Cubism 4.2. The recovered targetVersionNo is 4020000, matching the original reference. Header mappings and rejection of unknown versions were checked, and the recovery regression suite passed. No original project is required at runtime. Windows dropdown display remains to be visually confirmed.
+
+
+## Version 1.4.2
+All 37 stored RedFoxGirl deformer IDs are now preserved as IDs and display labels. Descriptive UTF-8 and XML-special-character identifiers were also tested. Existing SDK-target and recovery regression checks passed. Friendly names absent from the compiled file remain unavailable.

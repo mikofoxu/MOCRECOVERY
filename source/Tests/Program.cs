@@ -18,6 +18,22 @@ Check(text.Contains("Native physics setups restored: 12") && text.Contains("Nati
 var archiveData=CaffArchive.Read(p.Output);
 var xml=System.Xml.Linq.XDocument.Load(new MemoryStream(archiveData["main.xml"]));
 ProjectEnricher.Validate(xml);
+var storedIds=DeformerNames.ReadIds(File.ReadAllBytes(model));
+var deformers=xml.Descendants().Where(e=>e.HasElements&&(e.Name=="CWarpDeformerSource"||e.Name=="CRotationDeformerSource")).ToArray();
+Check(deformers.Select(e=>(string)e.Descendants("CDeformerId").Single().Attribute("idstr")!).ToHashSet().SetEquals(storedIds),"all 37 stored deformer IDs preserved");
+Check(deformers.All(e=>e.Descendants("s").Single(s=>(string?)s.Attribute("xs.n")=="localName").Value==(string)e.Descendants("CDeformerId").Single().Attribute("idstr")!),"deformer display labels use stored IDs");
+Check(text.Contains("Stored deformer IDs preserved as IDs and display names: 37"),"deformer naming result reported");
+// Replace one ID in a copy to exercise a descriptive UTF-8 name, including XML escaping.
+var fixture=File.ReadAllBytes(model);int idOffset=System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(fixture.AsSpan(64+11*4,4));
+fixture.AsSpan(idOffset,64).Clear();System.Text.Encoding.UTF8.GetBytes("Head & 耳").CopyTo(fixture,idOffset);
+Check(DeformerNames.ReadIds(fixture)[0]=="Head & 耳","descriptive UTF-8 ID decoded exactly");
+var fixturePath=Path.Combine(dir,"named-fixture.moc3");File.WriteAllBytes(fixturePath,fixture);
+var rawDoc=System.Xml.Linq.XDocument.Load(new MemoryStream(CaffArchive.Read(Directory.GetFiles(outputDir,"RedFoxGirl.cmo3").Single())["main.xml"]));
+// Restore the backend index markers on a test copy, then verify identity rather than traversal order.
+foreach(var g in rawDoc.Descendants("CDeformerGuid").Where(e=>e.Attribute("xs.id")!=null))
+{int index=System.Array.IndexOf(storedIds,(string?)g.Attribute("note"));if(index>=0)g.SetAttributeValue("note","Deformer"+index);}
+Check(DeformerNames.Apply(rawDoc,fixturePath).Contains(": 37."),"descriptive ID applied through verified index mapping");
+Check(rawDoc.Descendants("CDeformerId").Any(e=>(string?)e.Attribute("idstr")=="Head & 耳"),"descriptive name preserved in XML");
 Check(xml.Descendants("CModelSource").Single(e=>e.HasElements).Elements("i").Single(e=>(string?)e.Attribute("xs.n")=="targetVersionNo").Value=="4020000","RedFoxGirl SDK 4.2 target restored from MOC header");
 Check(text.Contains("compatibility target restored from MOC3: 4.2"),"detected SDK target reported");
 foreach(var pair in new[]{(1,3000000),(2,3030000),(3,4000000),(4,4020000),(5,5000000),(6,5030000)})Check(SdkTarget.FromMocVersion((byte)pair.Item1).Target==pair.Item2,"MOC version mapping "+pair.Item1);

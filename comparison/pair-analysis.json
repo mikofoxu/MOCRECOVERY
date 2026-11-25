@@ -1,0 +1,277 @@
+{
+  "original_meshes": 41,
+  "recovered_meshes": 38,
+  "missing_meshes": [
+    "ArtMesh0",
+    "ArtMesh1",
+    "mouth"
+  ],
+  "meshes": [
+    {
+      "id": "sleep",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 2
+    },
+    {
+      "id": "ArtMesh",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 2
+    },
+    {
+      "id": "fronthair",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "eyebrowright",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "eyebrowleft",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "fronthair2",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "fronthairshadow",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "depressed",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 2
+    },
+    {
+      "id": "eyeright",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 2
+    },
+    {
+      "id": "eyeleft",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 2
+    },
+    {
+      "id": "nose",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "blush",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 2
+    },
+    {
+      "id": "face",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "pupilrighthighlight",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 3
+    },
+    {
+      "id": "pupilright",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "eyerightback",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "pupillefthighlight",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 3
+    },
+    {
+      "id": "pupilleft",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "eyeleftback",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "faceback",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "neck",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "boobs",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "string",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 3
+    },
+    {
+      "id": "legleft",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "legright",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 1
+    },
+    {
+      "id": "body",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 3
+    },
+    {
+      "id": "backhair",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "tail",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 3
+    },
+    {
+      "id": "back",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 35
+    },
+    {
+      "id": "tongue",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 35
+    },
+    {
+      "id": "lowerteeth",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 35
+    },
+    {
+      "id": "upperteeth",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 35
+    },
+    {
+      "id": "closedmouth2",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 20
+    },
+    {
+      "id": "openmouthouter",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 25
+    },
+    {
+      "id": "earleft",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "earright",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 9
+    },
+    {
+      "id": "hearteyeright",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 2
+    },
+    {
+      "id": "hearteyeleft",
+      "key_combinations_equal": true,
+      "max_same_key_position_error": 0.0,
+      "triangles_equal": true,
+      "keyforms": 2
+    }
+  ]
+}

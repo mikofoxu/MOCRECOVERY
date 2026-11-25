@@ -1,4 +1,4 @@
-# MOC3 Recovery for Windows — 1.0.1
+# MOC3 Recovery for Windows — 1.1.0
 
 ## Run
 
@@ -23,9 +23,9 @@ Extract RAR/ZIP model packs before choosing the MOC3. The app reads files from f
 
 ## Preservation and limits
 
-The rig reconstruction includes supported geometry, keyforms, parameter binding grids, clipping, UVs, hierarchy, parts, deformers and glue data recovered by the backend. Available CDI parameter and part display names are applied. Runtime texture pixels are embedded in the new CMO3.
+The rig reconstruction includes supported geometry, keyforms, parameter binding grids, clipping, UVs, hierarchy, parts, deformers and glue data recovered by the backend. Available CDI parameter and part display names are applied, along with parameter groups. Runtime texture pixels are embedded in the new CMO3.
 
-Physics, expressions, motions, pose, user data, parameter groups and VTube Studio settings are retained as original companion files in the recovery ZIP when found. This release does NOT recreate their native Cubism Editor setup or animation scenes. Referenced sound files are included when found. Unreferenced `.exp3.json` files in the input folder are also preserved; shared-model folders can include unrelated expressions.
+Physics setups are now rebuilt as native CPhysicsSettingsSource objects from the matching physics3.json. Parameter-folder hierarchy and memberships are rebuilt from cdi3.json. The imported field layout was checked against the supplied original project. Expressions, motions, pose, user data and VTube Studio settings are retained as original companion files in the recovery ZIP; their native Editor setup or animation scenes are not recreated. Referenced sound files are included when found. Unreferenced `.exp3.json` files in the input folder are also preserved; shared-model folders can include unrelated expressions.
 
 Original PSD layers, omitted/unused meshes, original GUIDs, deformer names, editor-only controls, comments, and history cannot be fully recovered from compiled data. Unknown missing mesh names/counts cannot be identified without an original CMO3. This app does not compare against an original CMO3, even when an existing output has that name. You must keep and compare that original separately.
 
@@ -43,6 +43,8 @@ Source code is included under `source`. The program does not include the user's 
 - Windows engine PE imports inspected: Windows system DLLs only.
 - Shared C# workflow exercised end-to-end on Linux using the same Rust engine source with the RedFoxGirl export.
 - Confirmed 49 parameters, 37 deformers, 38 meshes and 50 CDI parameter/part names.
+- Original/recovered comparison: all 38 mesh triangle arrays and 315 position arrays match by parameter key combination.
+- Version 1.1.0 adds 12 native physics setups (26 inputs, 12 outputs, 44 particles), plus the expression parameter folder and root group. All 626 compared physics fields match the original within 0.00001; maximum observed rounding difference: 0.000002. Folder names and memberships match.
 - Independent CAFF/XML readback confirmed no unresolved references and unchanged recovered rig JSON compared with the earlier converter.
 - Tested same-basename output, texture lookup, preservation ZIP contents, refused overwrite, successful replacement with backup, engine-failure protection, missing textures, multi-dot filenames, invalid input and companion path traversal.
 
@@ -69,6 +71,14 @@ Its MIT license is included with the source. Modification: `Cmo3Project.set_main
 The wrapper and C# UI source are provided under the MIT license in `source/LICENSE`.
 The .NET runtime and third-party dependencies retain their own licenses. See the included notices and Cargo.lock.
 
-## Version 1.0.1 layout fix
+## Version 1.1.0 changes
 
-Replaced fixed-height heading/button rows with content-sized rows; set an explicit 96-DPI layout baseline with DPI autoscaling; added consistent margins and button padding; enabled wrapping button groups and status labels; made the output path selectable; added a report heading and more initial window space. The conversion engine is unchanged. Published successfully; Windows visual validation remains pending.
+- Added a C# CAFF archive reader/writer to enrich the generated project.
+- Rebuilt native physics sources, parameter GUID links, normalized ranges, particle chains, weights, output scales, reflection flags, setting names, and FPS from the runtime physics JSON.
+- Rebuilt native parameter folders, root group, parent relationships and parameter membership from CDI. Folder colors/open state use defaults because CDI does not preserve them.
+- Added XML reference validation and report counts for native imports. Invalid physics setups are skipped individually with an explicit warning; invalid group hierarchies are reported.
+- Preserved the 1.0.1 spacing/DPI fix and same-basename output behavior.
+
+Keep the original runtime companion files alongside the MOC3. The new importer does not copy rig data from an original CMO3 and requires no original project at runtime. No RedFoxGirl IDs or settings are hard-coded into the importer.
+
+See COMPARISON.md for remaining differences. Neither Windows GUI execution nor a Cubism Editor open/re-export test has been performed in this environment. Numeric/static matches do not establish complete animated equivalence. Deformer keyform coordinates, interpolation behavior, editor extensions and layer layouts have not all been proven equivalent.

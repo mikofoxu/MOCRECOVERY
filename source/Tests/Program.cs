@@ -13,6 +13,12 @@ Check(p.Textures.Count==1 && p.Textures[0].EndsWith("texture_00.png"),"manifest 
 Check(p.Assets.Any(f=>f.EndsWith(".physics3.json")) && p.Assets.Any(f=>f.EndsWith(".exp3.json")),"physics and unreferenced expression preservation");
 var text=await Recovery.ConvertAsync(p,engine,false);
 Check(File.Exists(p.Output)&&File.Exists(p.Report)&&File.Exists(p.Backup),"CMO3, text report and recovery ZIP produced");
+Check(text.Contains("Native physics setups restored: 12") && text.Contains("Native parameter folders restored (excluding root): 1"),"native physics and parameter groups restored");
+var archiveData=CaffArchive.Read(p.Output);
+var xml=System.Xml.Linq.XDocument.Load(new MemoryStream(archiveData["main.xml"]));
+ProjectEnricher.Validate(xml);
+Check(xml.Descendants("CPhysicsInput").Count()==26 && xml.Descendants("CPhysicsOutput").Count()==12 && xml.Descendants("CPhysicsVertex").Count()==44,"physics inputs, outputs and particle counts");
+Check(xml.Descendants("CParameterGroup").Count(e=>e.HasElements)==2,"root group plus expression folder");
 Check(text.Contains("meshes: 38")&&text.Contains("parameters: 49")&&text.Contains("Display names restored from CDI: 50"),"recovered counts and CDI names");
 using(var z=ZipFile.OpenRead(p.Backup)){Check(z.Entries.Any(e=>e.FullName.EndsWith(".physics3.json"))&&z.Entries.Any(e=>e.FullName.EndsWith("runtime.model.json")),"ZIP includes original settings and recovered data");}
 var hash=System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(p.Output));

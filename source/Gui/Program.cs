@@ -34,7 +34,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.0.1";
+        Text="MOC3 Recovery 1.1.0";
         ClientSize=new Size(960,800);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -122,7 +122,7 @@ public sealed class MainWindow : Form
         {
             var next=Recovery.Inspect(dialog.FileName);plan=next;input.Text=next.Input;
             destination.Text="Output: "+next.Output;RefreshTextures();convert.Enabled=true;openFolder.Enabled=true;
-            report.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics, expressions and other runtime settings will be preserved as files; this version does not rebuild their native Editor configuration.";
+            report.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics and parameter folders will be restored from companion files when available. Other runtime settings are preserved in the recovery ZIP.";
             status.Text="Ready to create "+Path.GetFileName(next.Output)+".";
         }
         catch(Exception e){MessageBox.Show(this,e.Message,"Unable to read model",MessageBoxButtons.OK,MessageBoxIcon.Error);}

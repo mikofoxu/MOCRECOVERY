@@ -15,6 +15,7 @@ public sealed class Plan
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> Notes { get; } = [];
     public string? DisplayInfo { get; set; }
+    public string? PhysicsInfo { get; set; }
     public string[] Outputs => [Output, Report, Backup];
 }
 public static class Recovery
@@ -56,6 +57,8 @@ public static class Recovery
                 }
                 foreach(var prop in refs.EnumerateObject())
                     if(prop.Name != "Moc" && prop.Name != "Textures") CollectReferences(prop.Value,dir,p);
+                if(refs.TryGetProperty("Physics",out var ph))
+                {var path=LocalPath(dir,ph.GetString()!);if(File.Exists(path))p.PhysicsInfo=path;}
                 if(refs.TryGetProperty("DisplayInfo",out var di))
                 { var path=LocalPath(dir,di.GetString()!); if(File.Exists(path))p.DisplayInfo=path; }
             }
@@ -85,6 +88,8 @@ public static class Recovery
         }
         var cdi=Path.ChangeExtension(input,".cdi3.json");
         if(p.DisplayInfo==null && File.Exists(cdi))p.DisplayInfo=cdi;
+        var physics=Path.ChangeExtension(input,".physics3.json");
+        if(p.PhysicsInfo==null && File.Exists(physics))p.PhysicsInfo=physics;
         return p;
     }
     private static void CollectReferences(JsonElement e,string dir,Plan p)
@@ -138,13 +143,18 @@ public static class Recovery
             await process.WaitForExitAsync();var output=await stdout;var error=await stderr;
             if(process.ExitCode!=0)throw new InvalidDataException("Conversion failed. Existing outputs were not changed.\r\n"+error);
             using var summary=JsonDocument.Parse(output);var s=summary.RootElement;
+            progress?.Report("Restoring physics and parameter groups from companion files…");
+            var enrichment=ProjectEnricher.Apply(staged,plan);
             using(var f=File.OpenRead(staged)){byte[] magic=new byte[4];f.ReadExactly(magic);if(!magic.AsSpan().SequenceEqual("CAFF"u8))throw new InvalidDataException("Engine did not produce a CMO3 archive.");}
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.1.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
             report.AppendLine("Display names restored from CDI: "+s.GetProperty("restoredNames"));
+            report.AppendLine("Native physics setups restored: "+enrichment.PhysicsSettings);
+            report.AppendLine("Native parameter folders restored (excluding root): "+enrichment.ParameterGroups);
+            foreach(var note in enrichment.Notes)report.AppendLine(note);
             int required=s.GetProperty("requiredTextures").GetInt32();
             report.AppendLine($"Texture pages required: {required}; supplied existing PNGs: {plan.Textures.Count(File.Exists)}.");
             report.AppendLine().AppendLine("MISSING OR UNCONFIRMED INPUTS");
@@ -158,7 +168,7 @@ public static class Recovery
             if(plan.DisplayInfo==null)report.AppendLine("No CDI display-info file: friendly parameter/part names were unavailable; runtime IDs are used.");
             report.AppendLine().AppendLine("PRESERVED AS FILES, NOT RESTORED AS NATIVE EDITOR SETTINGS");
             report.AppendLine("The recovery ZIP preserves the original MOC3, supplied textures, detected companion files, and the recovered runtime JSON. It can be opened with Windows Explorer.");
-            report.AppendLine("Physics, expressions, motions, pose, user data, parameter groups and VTube Studio settings remain companion files where found. This version does not rebuild their native Cubism Editor configuration/animation scenes.");
+            report.AppendLine("Expressions, motions, pose, user data and VTube Studio settings remain companion files where found; their native Editor configuration/animation scenes are not rebuilt. Physics setups and parameter groups are now imported when their companion data is valid; see counts and warnings above.");
             report.AppendLine("Unreferenced expression JSON files in this folder are included; they may belong to another model if models share a folder.");
             report.AppendLine().AppendLine("NOT RECOVERABLE FROM THESE INPUTS / NOT VERIFIED");
             report.AppendLine("Original PSD layers, removed meshes, editor-only controls, original GUIDs, deformer labels, authoring history and comments are not fully represented by a MOC3. Exact missing object names/counts cannot be determined without the original CMO3.");

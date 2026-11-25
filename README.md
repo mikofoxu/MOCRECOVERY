@@ -1,4 +1,4 @@
-# MOC3 Recovery for Windows — 1.1.0
+# MOC3 Recovery for Windows — 1.1.1
 
 ## Run
 
@@ -11,7 +11,7 @@ No Python, Rust, Visual Studio, or separate .NET installation is needed to run t
 4. Click **Create .cmo3**.
 5. Read the report in the window. **Open folder** opens the output location.
 
-For `A.moc3`, the app writes these files in that same folder:
+For `A.moc3`, the app writes these files in the folder containing `MocRecovery.exe`:
 
 - `A.cmo3` — reconstructed editable model.
 - `A.recovery.txt` — the recovery/missing-data report shown in the window.
@@ -71,7 +71,7 @@ Its MIT license is included with the source. Modification: `Cmo3Project.set_main
 The wrapper and C# UI source are provided under the MIT license in `source/LICENSE`.
 The .NET runtime and third-party dependencies retain their own licenses. See the included notices and Cargo.lock.
 
-## Version 1.1.0 changes
+## Version 1.1.0 changes (retained in 1.1.1)
 
 - Added a C# CAFF archive reader/writer to enrich the generated project.
 - Rebuilt native physics sources, parameter GUID links, normalized ranges, particle chains, weights, output scales, reflection flags, setting names, and FPS from the runtime physics JSON.
@@ -82,3 +82,7 @@ The .NET runtime and third-party dependencies retain their own licenses. See the
 Keep the original runtime companion files alongside the MOC3. The new importer does not copy rig data from an original CMO3 and requires no original project at runtime. No RedFoxGirl IDs or settings are hard-coded into the importer.
 
 See COMPARISON.md for remaining differences. Neither Windows GUI execution nor a Cubism Editor open/re-export test has been performed in this environment. Numeric/static matches do not establish complete animated equivalence. Deformer keyform coordinates, interpolation behavior, editor extensions and layer layouts have not all been proven equivalent.
+
+## Version 1.1.1 output location
+
+All generated files are saved beside MocRecovery.exe, using the input basename. For example, with the app in D:\data\MocRecovery and a model elsewhere, A.moc3 produces D:\data\MocRecovery\A.cmo3, A.recovery.txt and A.recovery.zip. The Open folder button opens this output directory. Texture and companion discovery still uses the input model directory. The application directory must be writable. Existing output replacement still requires confirmation and retains timestamped backups.

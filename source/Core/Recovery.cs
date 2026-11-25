@@ -9,8 +9,8 @@ public sealed class Plan
 {
     public required string Input { get; init; }
     public required string Output { get; init; }
-    public string Report => Path.ChangeExtension(Input, ".recovery.txt");
-    public string Backup => Path.ChangeExtension(Input, ".recovery.zip");
+    public string Report => Path.ChangeExtension(Output, ".recovery.txt");
+    public string Backup => Path.ChangeExtension(Output, ".recovery.zip");
     public List<string> Textures { get; } = [];
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> Notes { get; } = [];
@@ -20,7 +20,7 @@ public sealed class Plan
 }
 public static class Recovery
 {
-    public static Plan Inspect(string input)
+    public static Plan Inspect(string input, string? outputDirectory = null)
     {
         input = Path.GetFullPath(input);
         using (var s = File.OpenRead(input))
@@ -29,7 +29,8 @@ public static class Recovery
             if (s.Read(magic) != 4 || !magic.SequenceEqual("MOC3"u8))
                 throw new InvalidDataException("The selected file is not a valid MOC3 model.");
         }
-        var p = new Plan { Input = input, Output = Path.ChangeExtension(input, ".cmo3") };
+        var outputRoot = Path.GetFullPath(outputDirectory ?? AppContext.BaseDirectory);
+        var p = new Plan { Input = input, Output = Path.Combine(outputRoot, Path.GetFileNameWithoutExtension(input)+".cmo3") };
         if (string.Equals(input,p.Output,StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Select a .moc3 input, not a .cmo3 project.");
         p.Assets.Add(input);
         var dir = Path.GetDirectoryName(input)!;
@@ -119,7 +120,9 @@ public static class Recovery
         var conflicts=plan.Outputs.Where(File.Exists).ToArray();
         if(conflicts.Length>0 && !overwrite)throw new IOException("Output already exists: "+string.Join(", ",conflicts));
         var dir=Path.GetDirectoryName(plan.Input)!;
-        var temp=Path.Combine(dir,".moc-recovery-"+Guid.NewGuid().ToString("N"));
+        var outputDir=Path.GetDirectoryName(plan.Output)!;
+        Directory.CreateDirectory(outputDir);
+        var temp=Path.Combine(outputDir,".moc-recovery-"+Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
         try
         {
@@ -147,7 +150,7 @@ public static class Recovery
             var enrichment=ProjectEnricher.Apply(staged,plan);
             using(var f=File.OpenRead(staged)){byte[] magic=new byte[4];f.ReadExactly(magic);if(!magic.AsSpan().SequenceEqual("CAFF"u8))throw new InvalidDataException("Engine did not produce a CMO3 archive.");}
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.1.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.1.1").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");

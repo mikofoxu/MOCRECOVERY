@@ -39,4 +39,14 @@ try{Recovery.LocalPath(dir,"../outside.png");throw new Exception("traversal acce
 Check(Path.GetDirectoryName(p.Report)==outputDir && Path.GetDirectoryName(p.Backup)==outputDir,"report and preservation ZIP in application folder");
 Check(!File.Exists(Path.Combine(dir,"RedFoxGirl.cmo3")),"no generated CMO3 in input folder");
 Check(Path.GetDirectoryName(Recovery.Inspect(model).Output)==Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory),"default output uses executable base directory");
+Check(text.Contains("Inferred linked parameter pairs: 12"),"twelve inferred pairs reported");
+var linked=xml.Descendants("CParameterSource").Where(e=>e.HasElements && e.Elements("b").Any(b=>(string?)b.Attribute("xs.n")=="combined" && b.Value=="true")).Select(e=>(string)e.Element("CParameterId")!.Attribute("idstr")!).ToHashSet();
+var expected=new[]{"ParamAngleX","ParamEyeBallX","ParamBrowLX","ParamBrowRX","ParamBrowLAngle","ParamBrowRAngle","ParamMouthForm","Param2","Param4","Param6","Param10","ParamBodyAngleX"};
+Check(linked.SetEquals(expected),"expected linked controls, including inferred body pair");
+p.InferParameterLinks=false;
+await Recovery.ConvertAsync(p,engine,true);
+var disabled=CaffArchive.Read(p.Output);
+var disabledXml=System.Xml.Linq.XDocument.Load(new MemoryStream(disabled["main.xml"]));
+Check(!disabledXml.Descendants("CParameterSource").Where(e=>e.HasElements).SelectMany(e=>e.Elements("b")).Any(b=>(string?)b.Attribute("xs.n")=="combined" && b.Value=="true"),"disabled option keeps individual sliders");
+Check(archiveData["moc2cmo.model.json"].SequenceEqual(disabled["moc2cmo.model.json"]),"link option leaves recovered runtime geometry and bindings unchanged");
 Console.WriteLine("ALL CHECKS PASSED");

@@ -1,4 +1,4 @@
-# MOC3 Recovery for Windows — 1.1.1
+# MOC3 Recovery for Windows — 1.2.0
 
 ## Run
 
@@ -8,7 +8,7 @@ No Python, Rust, Visual Studio, or separate .NET installation is needed to run t
 1. Click **Choose .moc3…** and select the compiled model.
 2. Leave its companion files beside it, with the original folder structure. The matching `.model3.json` supplies texture paths and ordering automatically.
 3. If necessary, click **Choose textures…**, select atlas PNGs, and use Move up/down to set texture indices 0, 1, 2, etc. Missing texture pages use transparent placeholders.
-4. Click **Create .cmo3**.
+4. Leave **Rebuild linked parameter grids (inferred)** checked to combine likely paired sliders, or uncheck it for separate sliders. Click **Create .cmo3**.
 5. Read the report in the window. **Open folder** opens the output location.
 
 For `A.moc3`, the app writes these files in the folder containing `MocRecovery.exe`:
@@ -86,3 +86,9 @@ See COMPARISON.md for remaining differences. Neither Windows GUI execution nor a
 ## Version 1.1.1 output location
 
 All generated files are saved beside MocRecovery.exe, using the input basename. For example, with the app in D:\data\MocRecovery and a model elsewhere, A.moc3 produces D:\data\MocRecovery\A.cmo3, A.recovery.txt and A.recovery.zip. The Open folder button opens this output directory. Texture and companion discovery still uses the input model directory. The application directory must be writable. Existing output replacement still requires confirmation and retains timestamped backups.
+
+## Version 1.2.0 — linked parameter controls
+
+Adds an optional, enabled-by-default reconstruction of two-slider grids. Only adjacent parameters in the same group with a shared two-axis keyform binding are linked. The report lists every inferred pair. Original editor linking choices are not preserved in MOC3, so links can differ from the original. No original CMO3 is read by this feature.
+
+For RedFoxGirl, 12 pairs are inferred: the 11 identified in the reference project plus Body X/Y. Disable the checkbox to leave individual sliders. Recovery tests pass with the option on and off, including unchanged runtime geometry/bindings and output placement beside the executable. The Windows executable cross-build succeeds; visual behavior in Windows/Cubism still needs confirmation.

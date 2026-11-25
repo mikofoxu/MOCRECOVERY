@@ -46,3 +46,8 @@ Expressions, motions, pose, userdata and VTube Studio configuration remain origi
 Shared C# workflow tests cover conversion, names, physics/groups counts, missing textures, output naming, backups, refusal of unapproved overwrite, engine-failure protection, invalid input and companion path restrictions. The Windows x64 executable builds successfully. Independent Python CAFF/XML inspection verified the generated structures and compared the physics/groups to the original.
 
 The Windows EXE and generated model still need manual opening in Windows/Cubism Editor. No claim of full visual or animated equivalence is made.
+
+
+## 1.2.0 linked control update
+
+Optional inference sets the editor combined flag for adjacent parameters with shared two-axis bindings. RedFoxGirl produces 12 pairs (11 reference pairs plus Body X/Y). Inference is reported explicitly; it does not recover original UI choices exactly. Tests verify the disabled option, unchanged runtime JSON, native physics/folders, output paths and failed-conversion protection. Windows/Cubism visual validation was not performed.

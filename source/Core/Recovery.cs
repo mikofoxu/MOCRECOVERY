@@ -13,6 +13,7 @@ public sealed class Plan
     public string Backup => Path.ChangeExtension(Output, ".recovery.zip");
     public List<string> Textures { get; } = [];
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public bool InferParameterLinks { get; set; } = true;
     public List<string> Notes { get; } = [];
     public string? DisplayInfo { get; set; }
     public string? PhysicsInfo { get; set; }
@@ -150,13 +151,15 @@ public static class Recovery
             var enrichment=ProjectEnricher.Apply(staged,plan);
             using(var f=File.OpenRead(staged)){byte[] magic=new byte[4];f.ReadExactly(magic);if(!magic.AsSpan().SequenceEqual("CAFF"u8))throw new InvalidDataException("Engine did not produce a CMO3 archive.");}
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.1.1").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.2.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
             report.AppendLine("Display names restored from CDI: "+s.GetProperty("restoredNames"));
             report.AppendLine("Native physics setups restored: "+enrichment.PhysicsSettings);
             report.AppendLine("Native parameter folders restored (excluding root): "+enrichment.ParameterGroups);
+            report.AppendLine("Inferred linked parameter pairs: "+enrichment.LinkedPairs.Count+(plan.InferParameterLinks?"":" (option disabled)"));
+            foreach(var pair in enrichment.LinkedPairs)report.AppendLine("INFERRED LINK: "+pair);
             foreach(var note in enrichment.Notes)report.AppendLine(note);
             int required=s.GetProperty("requiredTextures").GetInt32();
             report.AppendLine($"Texture pages required: {required}; supplied existing PNGs: {plan.Textures.Count(File.Exists)}.");

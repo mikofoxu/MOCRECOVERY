@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Xml.Linq;
 using System.Globalization;
 namespace MocRecovery;
-public sealed record Enrichment(int PhysicsSettings,int ParameterGroups,List<string> Notes);
+public sealed record Enrichment(int PhysicsSettings,int ParameterGroups,List<string> Notes,List<string> LinkedPairs);
 public static class ProjectEnricher
 {
     static XAttribute N(string n)=>new("xs.n",n);
@@ -66,12 +66,14 @@ public static class ProjectEnricher
             catch(Exception e) when(e is JsonException or InvalidDataException or KeyNotFoundException or InvalidOperationException or ArgumentException)
             {notes.Add("PHYSICS IMPORT INCOMPLETE: "+e.Message);}
         }
+        var links=plan.InferParameterLinks ? InferLinks(doc,parameters,entries["moc2cmo.model.json"]) : new List<string>();
+        if(plan.InferParameterLinks)notes.Add("Linked parameter controls are inferred from adjacent parameters sharing a two-axis keyform grid. Original Editor linking choices are not stored in MOC3; additional or missing links are possible.");
         Validate(doc);
         using var ms=new MemoryStream();
         using(var writer=System.Xml.XmlWriter.Create(ms,new System.Xml.XmlWriterSettings{Encoding=new UTF8Encoding(false),Indent=true,CloseOutput=false}))doc.Save(writer);
         entries["main.xml"]=ms.ToArray();
         CaffArchive.Write(archivePath,entries);
-        return new(physics,groups,notes);
+        return new(physics,groups,notes,links);
     }
     static XElement Physics(JsonElement j,Dictionary<string,string> guids,string name)
     {
@@ -120,6 +122,46 @@ public static class ProjectEnricher
         Import(doc,"com.live2d.cubism.doc.model.param.group.CParameterGroup");Import(doc,"com.live2d.cubism.doc.model.id.CParameterGroupId");
         if(!doc.Nodes().OfType<XProcessingInstruction>().Any(p=>p.Target=="version"&&p.Data.StartsWith("CParameterGroup:")))doc.Root!.AddBeforeSelf(new XProcessingInstruction("version","CParameterGroup:3"));
         return groups.Count;
+    }
+    static List<string> InferLinks(XDocument doc,Dictionary<string,XElement> parameters,byte[] runtime)
+    {
+        using var data=JsonDocument.Parse(runtime);
+        var paramIds=data.RootElement.GetProperty("parameters").EnumerateArray().Select(p=>S(p,"id")).ToArray();
+        var candidates=new HashSet<(string,string)>();
+        (string,string) Pair(string a,string b)=>string.CompareOrdinal(a,b)<0?(a,b):(b,a);
+        foreach(var band in data.RootElement.GetProperty("binding_bands").EnumerateArray())
+        {
+            var axes=band.GetProperty("bindings").EnumerateArray().ToArray();
+            if(axes.Length!=2||axes.Any(a=>a.GetProperty("keys").GetArrayLength()<2))continue;
+            int a=axes[0].GetProperty("parameter_index").GetInt32(),b=axes[1].GetProperty("parameter_index").GetInt32();
+            if(a<0||b<0||a>=paramIds.Length||b>=paramIds.Length||a==b)continue;
+            candidates.Add(Pair(paramIds[a],paramIds[b]));
+        }
+        var byGuid=parameters.ToDictionary(p=>(string)p.Value.Element("CParameterGuid")!.Attribute("xs.ref")!,p=>p.Key);
+        var sequences=new List<string?[]>();
+        foreach(var g in doc.Descendants("CParameterGroup").Where(g=>g.HasElements))
+        {
+            var children=g.Elements("carray_list").FirstOrDefault(e=>(string?)e.Attribute("xs.n")=="_childGuids");
+            if(children!=null)sequences.Add(children.Elements().Select(e=>e.Name=="CParameterGuid"?byGuid.GetValueOrDefault((string?)e.Attribute("xs.ref")??""):null).ToArray());
+        }
+        if(sequences.Count==0)sequences.Add(parameters.Keys.Cast<string?>().ToArray());
+        foreach(var p in parameters.Values)
+        {
+            var flag=p.Elements("b").SingleOrDefault(e=>(string?)e.Attribute("xs.n")=="combined");
+            if(flag==null)p.Add(V("b","combined","false"));else flag.Value="false";
+        }
+        var linked=new List<string>();var used=new HashSet<string>();
+        foreach(var sequence in sequences)
+        for(int i=0;i+1<sequence.Length;i++)
+        {
+            string? a=sequence[i],b=sequence[i+1];
+            if(a==null||b==null||used.Contains(a)||used.Contains(b)||!candidates.Contains(Pair(a,b)))continue;
+            parameters[a].Elements("b").Single(e=>(string?)e.Attribute("xs.n")=="combined").Value="true";
+            used.Add(a);used.Add(b);
+            string Label(string id)=>parameters[id].Elements("s").FirstOrDefault(e=>(string?)e.Attribute("xs.n")=="name")?.Value??id;
+            linked.Add($"{Label(a)} [{a}] + {Label(b)} [{b}]");i++;
+        }
+        return linked;
     }
     public static void Validate(XDocument doc)
     {

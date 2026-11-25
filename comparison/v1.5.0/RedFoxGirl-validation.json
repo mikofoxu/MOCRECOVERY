@@ -1,0 +1,33 @@
+{
+  "result": {
+    "Meshes": 38,
+    "Keyforms": 315,
+    "Samples": 829,
+    "Errors": [],
+    "Warnings": [
+      "eyeright: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "eyeleft: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "body: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "back: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "tongue: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "lowerteeth: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "upperteeth: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "closedmouth2: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "openmouthouter: sampled triangle reverses winding relative to first keyform; may be intentional. Review deformation/culling in Editor.",
+      "Multi-axis validation uses pairwise limit corners and 32 deterministic interior combinations per multi-axis object, capped at 2048 samples per object. It is not exhaustive or a world-space simulation."
+    ],
+    "Rig": {
+      "Deformers": 37,
+      "Keyforms": 206,
+      "Samples": 837
+    },
+    "PhysicsSetupsCompared": 12
+  },
+  "scope": "Mesh keyforms and sampled local tensor interpolation, UVs, triangles, clipping IDs/flags, culling, draw order, opacity, physics numeric/range/particle/parameter checks, warp and rotation keyforms, hierarchy and binding grids, bounded simultaneous parameter samples",
+  "notVerified": [
+    "World-space deformer evaluation and interpolation equivalence to Cubism Core",
+    "Rendered clipping/compositing",
+    "Physics simulation over time",
+    "All multi-parameter combinations"
+  ]
+}

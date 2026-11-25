@@ -2,7 +2,8 @@ using System.Text;
 using System.Text.Json;
 namespace MocRecovery;
 
-public sealed record CompanionResult(int Expressions,int Motions,int Poses,List<string> Notes);
+public sealed record CompanionResult(int Expressions,int Motions,int Poses,List<string> Notes)
+{ public int FadePreviews {get;init;} public int EditorMotions {get;init;} }
 public static class CompanionExporter
 {
     static readonly JsonSerializerOptions Pretty=new(){WriteIndented=true};
@@ -11,7 +12,7 @@ public static class CompanionExporter
         Directory.CreateDirectory(destination);
         var parameters=model.GetProperty("parameters").EnumerateArray().ToDictionary(p=>p.GetProperty("id").GetString()!);
         var parts=model.GetProperty("parts").EnumerateArray().Select(p=>p.GetProperty("id").GetString()!).ToHashSet();
-        var notes=new List<string>();var inventory=new List<object>();int expressions=0,motions=0,poses=0,index=0;
+        var notes=new List<string>();var inventory=new List<object>();int expressions=0,motions=0,poses=0,index=0,fadePreviews=0,editorMotions=0;
         foreach(var file in plan.Assets.Order(StringComparer.OrdinalIgnoreCase))
         {
             var name=Path.GetFileName(file);string kind=name.EndsWith(".exp3.json",StringComparison.OrdinalIgnoreCase)?"expression":name.EndsWith(".motion3.json",StringComparison.OrdinalIgnoreCase)?"motion":name.EndsWith(".pose3.json",StringComparison.OrdinalIgnoreCase)?"pose":"";
@@ -22,6 +23,7 @@ public static class CompanionExporter
                 using var document=JsonDocument.Parse(File.ReadAllBytes(file));var root=document.RootElement;
                 if(kind=="expression")
                 {
+                    CompanionPreviews.Fade(root,"FadeInTime",1);CompanionPreviews.Fade(root,"FadeOutTime",1);
                     var values=new Dictionary<string,double>();var seen=new HashSet<string>();
                     foreach(var p in root.GetProperty("Parameters").EnumerateArray())
                     {
@@ -41,49 +43,57 @@ public static class CompanionExporter
                     foreach(var pair in values)all[pair.Key]=pair.Value;
                     string output=stem+".snapshot.motion3.json";
                     WriteSnapshot(Path.Combine(destination,output),all.Select(p=>("Parameter",p.Key,p.Value)));
-                    inventory.Add(new{source=name,type=kind,output,semantics="Full-weight isolated expression applied to MOC3 defaults; no fades or stacking"});expressions++;
+                    inventory.Add(new{source=name,type=kind,output,semantics="Full-weight isolated expression applied to MOC3 defaults; no stacking"});expressions++;
+                    string preview=stem+".fade-preview.motion3.json";
+                    CompanionPreviews.Expression(Path.Combine(destination,preview),root,parameters.ToDictionary(p=>p.Key,p=>Number(p.Value.GetProperty("default"))),all);
+                    inventory.Add(new{source=name,type="expression-fade-preview",output=preview,semantics="Sampled isolated cosine fade against defaults, one-second hold, then return to defaults; not runtime expression stacking"});fadePreviews++;
                 }
                 else if(kind=="motion")
                 {
                     ValidateMotion(root,parameters.Keys.ToHashSet(),parts,notes,name);
                     string output=stem;File.Copy(file,Path.Combine(destination,output));
                     inventory.Add(new{source=name,type=kind,output,semantics="Unmodified motion curves; import on recovered model track"});motions++;
+                    string prepared=stem.Replace(".motion3.json","",StringComparison.OrdinalIgnoreCase)+".editor.motion3.json";
+                    int omitted=CompanionPreviews.EditorMotion(Path.Combine(destination,prepared),root,parameters.Keys.ToHashSet(),parts);
+                    inventory.Add(new{source=name,type="editor-motion",output=prepared,omittedCurves=omitted,semantics="Known Parameter and PartOpacity curves only; retained curves, events and fade metadata unchanged"});editorMotions++;
+                    if(omitted>0)notes.Add($"{name}: editor copy omits {omitted} unknown/model-effect curve(s); unmodified motion is also provided.");
                 }
                 else
                 {
-                    int groupIndex=0;
+                    double fade=CompanionPreviews.Fade(root,"FadeInTime",0.5);
+                    var groups=new List<List<(string Id,string[] Links)>>();var owned=new HashSet<string>();
                     foreach(var group in root.GetProperty("Groups").EnumerateArray())
                     {
-                        groupIndex++;var members=group.EnumerateArray().ToArray();
-                        var mapped=new List<(string Id,string[] Links)>();var owned=new HashSet<string>();
-                        foreach(var member in members)
+                        var mapped=new List<(string Id,string[] Links)>();
+                        foreach(var member in group.EnumerateArray())
                         {
                             string id=member.GetProperty("Id").GetString()!;
                             var links=member.TryGetProperty("Link",out var l)?l.EnumerateArray().Select(e=>e.GetString()!).ToArray():Array.Empty<string>();
                             foreach(var part in new[]{id}.Concat(links))
-                            {
-                                if(!parts.Contains(part))throw new InvalidDataException("Unknown pose part: "+part);
-                                if(!owned.Add(part))throw new InvalidDataException("Ambiguous repeated pose part: "+part);
-                            }
+                            {if(!parts.Contains(part))throw new InvalidDataException("Unknown pose part: "+part);if(!owned.Add(part))throw new InvalidDataException("Ambiguous repeated pose part: "+part);}
                             mapped.Add((id,links));
                         }
-                        for(int selected=0;selected<mapped.Count;selected++)
-                        {
-                            var values=new List<(string,string,double)>();
-                            for(int i=0;i<mapped.Count;i++)foreach(string id in new[]{mapped[i].Id}.Concat(mapped[i].Links))values.Add(("PartOpacity",id,i==selected?1:0));
-                            string output=$"{stem}.group{groupIndex}-choice{selected+1}.motion3.json";
-                            WriteSnapshot(Path.Combine(destination,output),values);
-                            inventory.Add(new{source=name,type=kind,output,semantics="Isolated group visibility preview; runtime fading and automatic switching are not recreated"});poses++;
-                        }
+                        if(mapped.Count==0)throw new InvalidDataException("Empty pose group.");groups.Add(mapped);
                     }
+                    if(groups.Count==0)throw new InvalidDataException("No pose groups.");
+                    for(int g=0;g<groups.Count;g++)for(int selected=0;selected<groups[g].Count;selected++)
+                    {
+                        var values=new List<(string,string,double)>();
+                        for(int other=0;other<groups.Count;other++)for(int i=0;i<groups[other].Count;i++)
+                        foreach(string id in new[]{groups[other][i].Id}.Concat(groups[other][i].Links))values.Add(("PartOpacity",id,i==(other==g?selected:0)?1:0));
+                        string output=$"{stem}.group{g+1}-choice{selected+1}.motion3.json";
+                        WriteSnapshot(Path.Combine(destination,output),values);
+                        inventory.Add(new{source=name,type=kind,output,fadeInTime=fade,semantics="Complete pose-group snapshot, other groups use their first choice; links included. No runtime automatic switching/fade."});poses++;
+                    }
+                    notes.Add($"{name}: pose snapshots reset all {groups.Count} groups; FadeInTime={fade} seconds recorded in index.json, not baked as runtime switching.");
                 }
             }
             catch(Exception e) when(e is JsonException or InvalidDataException or KeyNotFoundException or InvalidOperationException or FormatException or OverflowException or ArgumentException or IOException)
             {notes.Add($"COMPANION NOT FULLY CONVERTED: {name}: {e.Message} Original remains in recovery ZIP.");}
         }
         File.WriteAllText(Path.Combine(destination,"index.json"),JsonSerializer.Serialize(inventory,Pretty));
-        File.WriteAllText(Path.Combine(destination,"README.txt"),"EDITOR IMPORT PACKAGE\n\nOpen the recovered CMO3 in Cubism Editor, add it to an animation scene, right-click its model track and choose Import Motion. Choose one of the motion3.json files here. Use a separate scene for each snapshot.\n\nExpressions are full-weight snapshots applied to MOC3 defaults, with Add/Multiply/Overwrite resolved and values clamped to parameter ranges. These are not live expression controllers: original fades, stacking and dependence on an animated base pose are not reproduced.\n\nPose files become separate part-opacity previews per group/choice, including linked parts. Runtime pose selection/fading is not baked. Existing motion files retain their original bytes, fades and events, but Cubism import may not reproduce runtime events, sounds or model-level effects. Original companions remain under original/ in the recovery ZIP. No CAN3 scene or native expression/pose controller is generated.\n\nImport instructions: https://docs.live2d.com/en/cubism-editor-manual/export-moc3-motion3-files/\n\n"+string.Join("\n",notes),Encoding.UTF8);
-        return new(expressions,motions,poses,notes);
+        File.WriteAllText(Path.Combine(destination,"README.txt"),"EDITOR IMPORT PACKAGE\n\nOpen the recovered CMO3 in Cubism Editor, add it to an animation scene, right-click its model track and choose Import Motion. Choose one of the motion3.json files here. Use a separate scene for each snapshot.\n\nExpressions are full-weight snapshots applied to MOC3 defaults, with Add/Multiply/Overwrite resolved and values clamped to parameter ranges. These are not live expression controllers: original fades, stacking and dependence on an animated base pose are not reproduced.\n\nExpression fade-preview motions additionally approximate an isolated fade-in, one-second hold and fade-out against defaults. They do not simulate stacking or an animated base pose.\n\nPose files become complete part-opacity snapshots per group/choice, including linked parts; other groups reset to their first choice. Fade time is recorded in index.json. Runtime pose selection/fading is not baked. Existing motion files retain their original bytes, fades and events. Additional .editor.motion3.json copies contain only known Parameter/PartOpacity targets with corrected counts, but Cubism import may not reproduce runtime events, sounds or model-level effects. Original companions remain under original/ in the recovery ZIP. No CAN3 scene or native expression/pose controller is generated.\n\nImport instructions: https://docs.live2d.com/en/cubism-editor-manual/export-moc3-motion3-files/\n\n"+string.Join("\n",notes),Encoding.UTF8);
+        return new(expressions,motions,poses,notes){FadePreviews=fadePreviews,EditorMotions=editorMotions};
     }
     static string SafeName(string s)=>string.Concat(s.Select(c=>char.IsLetterOrDigit(c)||c is '.' or '-' or '_'?c:'_'));
     public static double Number(JsonElement e){double v=e.GetDouble();if(!double.IsFinite(v))throw new InvalidDataException("Non-finite number.");return v;}
@@ -97,6 +107,7 @@ public static class CompanionExporter
         if(root.GetProperty("Version").GetInt32()!=3)throw new InvalidDataException("Unsupported motion version.");
         var meta=root.GetProperty("Meta");double duration=Number(meta.GetProperty("Duration"));
         if(duration<0||Number(meta.GetProperty("Fps"))<=0)throw new InvalidDataException("Invalid motion duration/FPS.");
+        CompanionPreviews.ValidateExtras(root,duration);
         int segments=0,points=0,count=0;var seen=new HashSet<string>();
         foreach(var curve in root.GetProperty("Curves").EnumerateArray())
         {

@@ -166,10 +166,10 @@ public static class Recovery
             Stage("Naming deformers from ArtMeshes…");
             var deformerNames=DeformerNames.NameFromArtMeshes(staged);
             Stage("Validating recovered project…");
-            var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"));
+            var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.4.4").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.5.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -182,7 +182,8 @@ public static class Recovery
             report.AppendLine().AppendLine("EDITOR IMPORT PACKAGE (inside recovery ZIP: editor-import/)");
             report.AppendLine($"Expression snapshots: {companions.Expressions}; import-ready motions: {companions.Motions}; pose visibility previews: {companions.Poses}.");
             report.AppendLine("Extract the ZIP. Add the recovered CMO3 to an animation scene, right-click its model track, choose Import Motion. Read editor-import/README.txt first.");
-            report.AppendLine("Expression snapshots use default parameter values; expression fades/stacking and runtime pose switching are not recreated.");
+            report.AppendLine($"Additional expression fade previews: {companions.FadePreviews}; filtered editor motion copies: {companions.EditorMotions}.");
+            report.AppendLine("Expression fade previews approximate an isolated transition against defaults. Runtime stacking/animated-base expressions and automatic pose switching are not recreated. Pose snapshots reset other groups to their first choice.");
             foreach(var note in companions.Notes)report.AppendLine(note);
             report.AppendLine().AppendLine("OPTIONAL PSD");
             if(psdResult==null)report.AppendLine("No PSD selected. Recovery uses MOC3 and available companion files.");
@@ -194,9 +195,10 @@ public static class Recovery
             }
             report.AppendLine().AppendLine("VALIDATION");
             report.AppendLine($"Checked {validation.Meshes} meshes, {validation.Keyforms} mesh keyforms and {validation.Samples} local interpolation samples against emitted Editor data. No checked-data mismatches.");
+            report.AppendLine($"Checked {validation.Rig?.Deformers} deformers, {validation.Rig?.Keyforms} deformer keyforms and {validation.Rig?.Samples} deformer local samples. Physics setups compared field-by-field with companion: {validation.PhysicsSetupsCompared}.");
             report.AppendLine("Also checked UVs, triangles, clipping references/flags, culling, draw order, opacity, and physics numeric/range/particle references.");
             foreach(var note in validation.Warnings)report.AppendLine("REVIEW: "+note);
-            report.AppendLine("Not verified: world-space deformer evaluation, rendered clipping/compositing, physics simulation, or every parameter combination. Import editor-import/validation/parameter-sweep.motion3.json to review the recovered model visually.");
+            report.AppendLine("Not verified: world-space deformer evaluation, rendered clipping/compositing, physics simulation, or every parameter combination. Import editor-import/validation/parameter-sweep.motion3.json and parameter-pairs.motion3.json (when co-bound pairs exist) to review single and simultaneous movement visually. Pair schedule JSON identifies each segment; at most 64 pairs are included.");
             foreach(var note in deformerNames)report.AppendLine(note);
             int required=s.GetProperty("requiredTextures").GetInt32();
             report.AppendLine($"Texture pages required: {required}; supplied existing PNGs: {plan.Textures.Count(File.Exists)}.");

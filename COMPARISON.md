@@ -76,3 +76,6 @@ ArtMesh-derived naming changes only deformer display labels. RedFoxGirl: 14 labe
 Replaced full-raster PSD allocations with row decoding and chunked PNG encoding. CAFF reads/writes no longer allocate full archive copies. Full recovery and PSD integration checks pass; all 35 RedFoxGirl PSD layers have identical decompressed scanlines, dimensions and ICC metadata versus v1.4.3, and all PNG CRCs validate.
 
 Measured Linux .NET 10 process peak RSS for all-layer PSD extraction: v1.4.3 3,619,140 KiB; v1.4.4 192,236 KiB (94.7% lower). Full v1.4.4 recovery with the supplied PSD: 513,848 KiB. These are test measurements, not Windows memory guarantees. The user's exact Windows OutOfMemoryException was not reproduced; the high-allocation paths were eliminated and failure reports now include stage and stack trace. Windows GUI and Cubism visual testing remain for the user.
+
+## Version 1.5.0
+38 meshes / 315 keyforms / 829 mesh samples; 37 deformers / 206 keyforms / 837 deformer samples; 12 physics setups compared with companion fields. Zero checked-data mismatches; nine winding warnings remain. Corruption, companion-conversion and optional-PSD integration tests pass. See CHANGES-1.5.0.md for full scope and limitations. Windows/Cubism visual testing remains outstanding.

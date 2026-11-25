@@ -1,0 +1,64 @@
+PASS: same basename in application folder, separate from input
+PASS: manifest texture ordering
+PASS: physics and unreferenced expression preservation
+PASS: CMO3, text report and recovery ZIP produced
+PASS: native physics and parameter groups restored
+PASS: all 37 stored deformer IDs preserved
+PASS: tail mesh names Warp21 without changing its ID
+PASS: ArtMesh naming changes only display labels; IDs, references and rig data unchanged
+PASS: multi-mesh parent keeps its name when ambiguous
+PASS: deformer naming result reported
+PASS: descriptive UTF-8 ID decoded exactly
+PASS: descriptive ID applied through verified index mapping
+PASS: descriptive name preserved in XML
+PASS: RedFoxGirl SDK 4.2 target restored from MOC header
+PASS: detected SDK target reported
+PASS: MOC version mapping 1
+PASS: MOC version mapping 2
+PASS: MOC version mapping 3
+PASS: MOC version mapping 4
+PASS: MOC version mapping 5
+PASS: MOC version mapping 6
+PASS: unknown MOC version rejected
+PASS: physics inputs, outputs and particle counts
+PASS: root group plus expression folder
+PASS: recovered counts and CDI names
+PASS: ZIP includes original settings and recovered data
+PASS: unapproved overwrite refused
+PASS: failed engine reported
+PASS: engine failure preserves previous output
+PASS: approved replacement retains backup
+PASS: missing texture placeholder and multi-dot naming
+PASS: invalid MOC rejected
+PASS: companion path traversal refused
+PASS: report and preservation ZIP in application folder
+PASS: no generated CMO3 in input folder
+PASS: default output uses executable base directory
+PASS: twelve inferred pairs reported
+PASS: expected linked controls, including inferred body pair
+PASS: disabled option keeps individual sliders
+PASS: link option leaves recovered runtime geometry and bindings unchanged
+PASS: expression, motion and linked pose conversion counts
+PASS: malformed motion explicitly reported
+PASS: Add Multiply Overwrite apply to defaults correctly
+PASS: original motion curves preserved byte-for-byte
+PASS: pose choice includes linked-part visibility
+PASS: validator detects deliberately corrupted draw order and clipping
+PASS: validator samples deformation keyforms
+FEATURE CHECKS PASSED
+PASS: deformer and source-physics checks accept unmodified recovery
+PASS: paired review motion validates and includes all parameter defaults
+PASS: changed warp vertex detected
+PASS: changed rotation angle detected
+PASS: changed parent link detected
+PASS: changed deformer grid reference detected
+PASS: changed physics scale detected against companion
+PASS: simultaneous limit and interior parameter samples present
+PASS: fade previews, filtered motions and multi-group pose snapshots produced
+PASS: invalid later pose group leaves no partial previews
+PASS: invalid events and omitted motion targets reported
+PASS: expression fade starts at default, reaches target and returns; midpoint matches envelope
+PASS: pose preview resets other groups consistently
+PASS: filtered motion retains known curve, fades and Unicode event
+ADVANCED CHECKS PASSED
+ALL CHECKS PASSED

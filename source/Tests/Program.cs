@@ -49,4 +49,5 @@ var disabled=CaffArchive.Read(p.Output);
 var disabledXml=System.Xml.Linq.XDocument.Load(new MemoryStream(disabled["main.xml"]));
 Check(!disabledXml.Descendants("CParameterSource").Where(e=>e.HasElements).SelectMany(e=>e.Elements("b")).Any(b=>(string?)b.Attribute("xs.n")=="combined" && b.Value=="true"),"disabled option keeps individual sliders");
 Check(archiveData["moc2cmo.model.json"].SequenceEqual(disabled["moc2cmo.model.json"]),"link option leaves recovered runtime geometry and bindings unchanged");
+FeatureChecks.Run(dir,p.Output);
 Console.WriteLine("ALL CHECKS PASSED");

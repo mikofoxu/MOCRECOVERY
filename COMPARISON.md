@@ -51,3 +51,11 @@ The Windows EXE and generated model still need manual opening in Windows/Cubism 
 ## 1.2.0 linked control update
 
 Optional inference sets the editor combined flag for adjacent parameters with shared two-axis bindings. RedFoxGirl produces 12 pairs (11 reference pairs plus Body X/Y). Inference is reported explicitly; it does not recover original UI choices exactly. Tests verify the disabled option, unchanged runtime JSON, native physics/folders, output paths and failed-conversion protection. Windows/Cubism visual validation was not performed.
+
+
+## Version 1.3.0
+RedFoxGirl: 6 expression snapshots, 38 meshes, 315 mesh keyforms, 399 local interpolation samples, zero checked-data mismatches, 9 winding warnings requiring visual review. Motion and pose conversion were tested with synthetic fixtures because this sample pack does not supply them. See README for scope and limits.
+
+
+## Version 1.4.0
+Optional PSD import adds source images without changing atlas rig links. RedFoxGirl PSD: 35 raster layers, 29 unique name candidates, two ambiguous fronthair names and four unmatched layer names. Exact raw pixel equality against an independent PSD reader; embedded ICC profile preserved. Existing rig validation remains at 38 meshes, 315 keyforms and 399 local samples. Windows/Cubism source-image display still requires user testing.

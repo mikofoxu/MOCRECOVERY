@@ -1,0 +1,667 @@
+{
+  "Width": 7632,
+  "Height": 16368,
+  "Groups": [],
+  "Layers": [
+    {
+      "Index": 0,
+      "Name": "Layer 1",
+      "Parent": null,
+      "Left": 0,
+      "Top": 0,
+      "Width": 7632,
+      "Height": 16368,
+      "Visible": false,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0000.png",
+      "Match": "No mesh name match",
+      "MeshIds": [],
+      "Warnings": []
+    },
+    {
+      "Index": 1,
+      "Name": "Layer 4",
+      "Parent": null,
+      "Left": 0,
+      "Top": 0,
+      "Width": 7632,
+      "Height": 16368,
+      "Visible": false,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0001.png",
+      "Match": "No mesh name match",
+      "MeshIds": [],
+      "Warnings": []
+    },
+    {
+      "Index": 2,
+      "Name": "tail",
+      "Parent": null,
+      "Left": 638,
+      "Top": 4428,
+      "Width": 3137,
+      "Height": 3986,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0002.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "tail"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 3,
+      "Name": "backhair",
+      "Parent": null,
+      "Left": 2581,
+      "Top": 880,
+      "Width": 2707,
+      "Height": 4028,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0003.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "backhair"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 4,
+      "Name": "body",
+      "Parent": null,
+      "Left": -531,
+      "Top": -63,
+      "Width": 8662,
+      "Height": 17324,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0004.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "body"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 5,
+      "Name": "legright",
+      "Parent": null,
+      "Left": 3794,
+      "Top": 7223,
+      "Width": 1666,
+      "Height": 8843,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0005.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "legright"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 6,
+      "Name": "legleft",
+      "Parent": null,
+      "Left": 2190,
+      "Top": 7222,
+      "Width": 1601,
+      "Height": 8765,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0006.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "legleft"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 7,
+      "Name": "string",
+      "Parent": null,
+      "Left": 3564,
+      "Top": 7253,
+      "Width": 494,
+      "Height": 448,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0007.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "string"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 8,
+      "Name": "boobs",
+      "Parent": null,
+      "Left": 2845,
+      "Top": 4068,
+      "Width": 1996,
+      "Height": 1198,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0008.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "boobs"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 9,
+      "Name": "neck",
+      "Parent": null,
+      "Left": 3569,
+      "Top": 2840,
+      "Width": 673,
+      "Height": 735,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0009.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "neck"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 10,
+      "Name": "faceback",
+      "Parent": null,
+      "Left": 3314,
+      "Top": 2425,
+      "Width": 1157,
+      "Height": 270,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0010.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "faceback"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 11,
+      "Name": "eyeleftback",
+      "Parent": null,
+      "Left": 3314,
+      "Top": 2425,
+      "Width": 372,
+      "Height": 262,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0011.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "eyeleftback"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 12,
+      "Name": "pupilleft",
+      "Parent": null,
+      "Left": 3402,
+      "Top": 2384,
+      "Width": 231,
+      "Height": 300,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0012.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "pupilleft"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 13,
+      "Name": "pupillefthighlight",
+      "Parent": null,
+      "Left": 3468,
+      "Top": 2444,
+      "Width": 73,
+      "Height": 64,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0013.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "pupillefthighlight"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 14,
+      "Name": "hearteyeleft",
+      "Parent": null,
+      "Left": 3434,
+      "Top": 2421,
+      "Width": 205,
+      "Height": 234,
+      "Visible": false,
+      "Opacity": 252,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0014.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "hearteyeleft"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 15,
+      "Name": "eyerightback",
+      "Parent": null,
+      "Left": 4099,
+      "Top": 2433,
+      "Width": 372,
+      "Height": 262,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0015.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "eyerightback"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 16,
+      "Name": "pupilright",
+      "Parent": null,
+      "Left": 4152,
+      "Top": 2392,
+      "Width": 231,
+      "Height": 300,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0016.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "pupilright"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 17,
+      "Name": "pupilrighthighlight",
+      "Parent": null,
+      "Left": 4195,
+      "Top": 2452,
+      "Width": 73,
+      "Height": 64,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0017.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "pupilrighthighlight"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 18,
+      "Name": "face",
+      "Parent": null,
+      "Left": 3196,
+      "Top": 1639,
+      "Width": 1414,
+      "Height": 1731,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0018.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "face"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 19,
+      "Name": "blush",
+      "Parent": null,
+      "Left": 3237,
+      "Top": 2653,
+      "Width": 1277,
+      "Height": 329,
+      "Visible": false,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0019.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "blush"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 20,
+      "Name": "mouth",
+      "Parent": null,
+      "Left": 3723,
+      "Top": 3006,
+      "Width": 357,
+      "Height": 117,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0020.png",
+      "Match": "No mesh name match",
+      "MeshIds": [],
+      "Warnings": []
+    },
+    {
+      "Index": 21,
+      "Name": "nose",
+      "Parent": null,
+      "Left": 3800,
+      "Top": 2656,
+      "Width": 192,
+      "Height": 231,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0021.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "nose"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 22,
+      "Name": "eyeleft",
+      "Parent": null,
+      "Left": 3230,
+      "Top": 2324,
+      "Width": 486,
+      "Height": 389,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0022.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "eyeleft"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 23,
+      "Name": "eyeright",
+      "Parent": null,
+      "Left": 4069,
+      "Top": 2332,
+      "Width": 486,
+      "Height": 389,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0023.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "eyeright"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 24,
+      "Name": "depressed",
+      "Parent": null,
+      "Left": 3024,
+      "Top": 1785,
+      "Width": 1627,
+      "Height": 751,
+      "Visible": false,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0024.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "depressed"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 25,
+      "Name": "hearteyeright",
+      "Parent": null,
+      "Left": 4174,
+      "Top": 2434,
+      "Width": 204,
+      "Height": 233,
+      "Visible": false,
+      "Opacity": 252,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0025.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "hearteyeright"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 26,
+      "Name": "fronthairshadow",
+      "Parent": null,
+      "Left": 3215,
+      "Top": 1761,
+      "Width": 1381,
+      "Height": 875,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0026.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "fronthairshadow"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 27,
+      "Name": "fronthair",
+      "Parent": null,
+      "Left": 2934,
+      "Top": 1004,
+      "Width": 1922,
+      "Height": 2919,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0027.png",
+      "Match": "Ambiguous duplicate PSD name",
+      "MeshIds": [
+        "fronthair"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 28,
+      "Name": "eyebrowleft",
+      "Parent": null,
+      "Left": 3246,
+      "Top": 2133,
+      "Width": 473,
+      "Height": 114,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0028.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "eyebrowleft"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 29,
+      "Name": "eyebrowright",
+      "Parent": null,
+      "Left": 4080,
+      "Top": 2133,
+      "Width": 473,
+      "Height": 114,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0029.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "eyebrowright"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 30,
+      "Name": "fronthair",
+      "Parent": null,
+      "Left": 2934,
+      "Top": 1004,
+      "Width": 1922,
+      "Height": 2919,
+      "Visible": true,
+      "Opacity": 130,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0030.png",
+      "Match": "Ambiguous duplicate PSD name",
+      "MeshIds": [
+        "fronthair"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 31,
+      "Name": "earright",
+      "Parent": null,
+      "Left": 4244,
+      "Top": 388,
+      "Width": 1074,
+      "Height": 1388,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0031.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "earright"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 32,
+      "Name": "earleft",
+      "Parent": null,
+      "Left": 2524,
+      "Top": 323,
+      "Width": 1023,
+      "Height": 1490,
+      "Visible": true,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0032.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "earleft"
+      ],
+      "Warnings": []
+    },
+    {
+      "Index": 33,
+      "Name": "mad sign",
+      "Parent": null,
+      "Left": 2925,
+      "Top": 1646,
+      "Width": 431,
+      "Height": 447,
+      "Visible": false,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0033.png",
+      "Match": "No mesh name match",
+      "MeshIds": [],
+      "Warnings": []
+    },
+    {
+      "Index": 34,
+      "Name": "sleep",
+      "Parent": null,
+      "Left": 5288,
+      "Top": 323,
+      "Width": 736,
+      "Height": 1081,
+      "Visible": false,
+      "Opacity": 255,
+      "Blend": "norm",
+      "Clipping": false,
+      "File": "psd-layer-0034.png",
+      "Match": "Unique name candidate (not pixel verified; texture link unchanged)",
+      "MeshIds": [
+        "sleep"
+      ],
+      "Warnings": [
+        "Smart object: imports its stored raster preview, not editable object contents.",
+        "Smart object: imports its stored raster preview, not editable object contents."
+      ]
+    }
+  ]
+}

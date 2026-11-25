@@ -13,6 +13,7 @@ public sealed class Plan
     public string Backup => Path.ChangeExtension(Output, ".recovery.zip");
     public List<string> Textures { get; } = [];
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public string? PsdInput { get; set; }
     public bool InferParameterLinks { get; set; } = true;
     public List<string> Notes { get; } = [];
     public string? DisplayInfo { get; set; }
@@ -150,8 +151,20 @@ public static class Recovery
             progress?.Report("Restoring physics and parameter groups from companion files…");
             var enrichment=ProjectEnricher.Apply(staged,plan);
             using(var f=File.OpenRead(staged)){byte[] magic=new byte[4];f.ReadExactly(magic);if(!magic.AsSpan().SequenceEqual("CAFF"u8))throw new InvalidDataException("Engine did not produce a CMO3 archive.");}
+            progress?.Report("Preparing companion motions and checking recovered geometry…");
+            var extra=Path.Combine(temp,"editor-import");
+            using var recovered=JsonDocument.Parse(File.ReadAllBytes(modelJson));
+            var companions=CompanionExporter.Export(plan,recovered.RootElement,extra);
+            PsdImportResult? psdResult=null;
+            if(plan.PsdInput!=null)
+            {
+                progress?.Report("Importing optional PSD source artwork… Large layers may take a few minutes.");
+                psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"));
+            }
+            var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"));
+            if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.2.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.4.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -161,6 +174,24 @@ public static class Recovery
             report.AppendLine("Inferred linked parameter pairs: "+enrichment.LinkedPairs.Count+(plan.InferParameterLinks?"":" (option disabled)"));
             foreach(var pair in enrichment.LinkedPairs)report.AppendLine("INFERRED LINK: "+pair);
             foreach(var note in enrichment.Notes)report.AppendLine(note);
+            report.AppendLine().AppendLine("EDITOR IMPORT PACKAGE (inside recovery ZIP: editor-import/)");
+            report.AppendLine($"Expression snapshots: {companions.Expressions}; import-ready motions: {companions.Motions}; pose visibility previews: {companions.Poses}.");
+            report.AppendLine("Extract the ZIP. Add the recovered CMO3 to an animation scene, right-click its model track, choose Import Motion. Read editor-import/README.txt first.");
+            report.AppendLine("Expression snapshots use default parameter values; expression fades/stacking and runtime pose switching are not recreated.");
+            foreach(var note in companions.Notes)report.AppendLine(note);
+            report.AppendLine().AppendLine("OPTIONAL PSD");
+            if(psdResult==null)report.AppendLine("No PSD selected. Recovery uses MOC3 and available companion files.");
+            else
+            {
+                report.AppendLine($"PSD raster layers: {psdResult.Layers}; source images imported: {psdResult.Imported}; unique name candidates: {psdResult.NameMatches}.");
+                report.AppendLine("PSD source images and names are available in the project. Existing mesh texture links remain on the atlas; name candidates are not pixel-verified. Unmatched artwork does not recreate omitted mesh geometry or rigging.");
+                foreach(var note in psdResult.Notes)report.AppendLine(note);
+            }
+            report.AppendLine().AppendLine("VALIDATION");
+            report.AppendLine($"Checked {validation.Meshes} meshes, {validation.Keyforms} mesh keyforms and {validation.Samples} local interpolation samples against emitted Editor data. No checked-data mismatches.");
+            report.AppendLine("Also checked UVs, triangles, clipping references/flags, culling, draw order, opacity, and physics numeric/range/particle references.");
+            foreach(var note in validation.Warnings)report.AppendLine("REVIEW: "+note);
+            report.AppendLine("Not verified: world-space deformer evaluation, rendered clipping/compositing, physics simulation, or every parameter combination. Import editor-import/validation/parameter-sweep.motion3.json to review the recovered model visually.");
             int required=s.GetProperty("requiredTextures").GetInt32();
             report.AppendLine($"Texture pages required: {required}; supplied existing PNGs: {plan.Textures.Count(File.Exists)}.");
             report.AppendLine().AppendLine("MISSING OR UNCONFIRMED INPUTS");
@@ -174,11 +205,11 @@ public static class Recovery
             if(plan.DisplayInfo==null)report.AppendLine("No CDI display-info file: friendly parameter/part names were unavailable; runtime IDs are used.");
             report.AppendLine().AppendLine("PRESERVED AS FILES, NOT RESTORED AS NATIVE EDITOR SETTINGS");
             report.AppendLine("The recovery ZIP preserves the original MOC3, supplied textures, detected companion files, and the recovered runtime JSON. It can be opened with Windows Explorer.");
-            report.AppendLine("Expressions, motions, pose, user data and VTube Studio settings remain companion files where found; their native Editor configuration/animation scenes are not rebuilt. Physics setups and parameter groups are now imported when their companion data is valid; see counts and warnings above.");
+            report.AppendLine("Original companions remain preserved. Expressions and pose groups additionally produce importable approximations; existing motions are checked and prepared for Editor import. Native controllers and animation scenes are not rebuilt. Physics setups and parameter groups are now imported when their companion data is valid; see counts and warnings above.");
             report.AppendLine("Unreferenced expression JSON files in this folder are included; they may belong to another model if models share a folder.");
             report.AppendLine().AppendLine("NOT RECOVERABLE FROM THESE INPUTS / NOT VERIFIED");
-            report.AppendLine("Original PSD layers, removed meshes, editor-only controls, original GUIDs, deformer labels, authoring history and comments are not fully represented by a MOC3. Exact missing object names/counts cannot be determined without the original CMO3.");
-            report.AppendLine("Reconstructed artwork uses texture-atlas pages, not original layered PSD artwork. Advanced/version-specific features may not round-trip exactly.");
+            report.AppendLine((psdResult==null?"Original PSD layers were not supplied. ":"Supplied PSD artwork is imported separately; it cannot restore omitted rigging. ")+"Removed mesh geometry, editor-only controls, original GUIDs, deformer labels, authoring history and comments are not fully represented by a MOC3. Exact missing rig object names/counts cannot be determined without the original CMO3.");
+            report.AppendLine("Rig texture links use the recovered atlas pages. Optional PSD source images are imported separately without automatic texture relinking. Advanced/version-specific features may not round-trip exactly.");
             report.AppendLine("A valid archive does not prove visual or animated equivalence. Open in Cubism Editor and check the rig before use.");
             progress?.Report("Preserving companion files and writing the report…");
             var zip=Path.Combine(temp,"assets.zip");
@@ -192,6 +223,9 @@ public static class Recovery
                     archive.CreateEntryFromFile(asset,"original/"+relative.Replace('\\','/'),CompressionLevel.Optimal);
                     report.AppendLine("Preserved: "+asset);
                 }
+                if(plan.PsdInput!=null)archive.CreateEntryFromFile(plan.PsdInput,"original/source-artwork/"+Path.GetFileName(plan.PsdInput),CompressionLevel.Optimal);
+                foreach(var generated in Directory.GetFiles(extra,"*",SearchOption.AllDirectories))
+                    archive.CreateEntryFromFile(generated,"editor-import/"+Path.GetRelativePath(extra,generated).Replace('\\','/'),CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(modelJson,"recovered/runtime.model.json",CompressionLevel.Optimal);
             }
             var reportPath=Path.Combine(temp,"report.txt");File.WriteAllText(reportPath,report.ToString(),Encoding.UTF8);

@@ -1,0 +1,21 @@
+MOC3 RECOVERY — RESPONSIBLE USE AND DISCLAIMER
+Application version: 1.4.0 | Documentation revision: 3
+
+RESPONSIBLE USE
+Use this tool responsibly and only with models, artwork, and other files that you own or have permission or another lawful basis to process. Respect creators' rights, applicable licenses, and applicable law. Do not use this tool to steal, misrepresent ownership of, or redistribute another person's work without authorization. Recovery does not grant ownership or reuse rights in the recovered content.
+
+USER RESPONSIBILITY / MISUSE
+You are responsible for how you use this tool and any recovered files. To the fullest extent permitted by applicable law, the author and contributors are not responsible or liable for misuse, unauthorized use, infringement, data loss, or other damage arising from use of the tool or its output. This notice does not exclude liability that cannot lawfully be excluded.
+
+NO WARRANTY
+This tool is provided AS IS, without warranties of any kind. Recovery is incomplete and may contain errors. Keep backups and review the recovered project before relying on it. Refer to the included licenses for their full warranty and liability terms.
+
+LIVE2D CODE AND DEPENDENCIES
+The v1.4.0 audit found no Live2D SDK/Core dependency, bundled Live2D proprietary library, or identified Live2D proprietary source code in the reviewed application source. The custom application components were developed without intentionally copying Live2D proprietary source code. Public documentation and supplied model files were used to understand file formats.
+
+The recovery engine DOES use third-party code: the MIT-licensed moc2cmo backend by Eatgrapes, together with its dependencies.
+Backend repository: https://github.com/Eatgrapes/moc2cmo
+
+This is not a claim that every line of third-party code has independently verified provenance. The audit cannot guarantee that no upstream code originated from Live2D. Retain the included attribution and license notices.
+
+This is an independent tool, not an official Live2D product. It is not affiliated with or endorsed by Live2D. Live2D and Cubism names are used to identify compatible file formats and software.

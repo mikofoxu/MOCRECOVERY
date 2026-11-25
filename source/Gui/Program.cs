@@ -26,6 +26,10 @@ public sealed class MainWindow : Form
     private readonly Label status=new(){Text="Choose a compiled model to begin.",AutoSize=true};
     private readonly ProgressBar progress=new(){Dock=DockStyle.Fill,Visible=false,Style=ProgressBarStyle.Marquee};
     private readonly CheckBox inferLinks=new(){Text="Rebuild linked parameter grids (inferred)",Checked=true,AutoSize=true};
+    private readonly Button selectPsd=new(){Text="Choose optional PSD…",AutoSize=true};
+    private readonly Button clearPsd=new(){Text="No PSD",AutoSize=true};
+    private readonly Label psdStatus=new(){Text="PSD: none (optional)",AutoSize=true,MaximumSize=new Size(340,0),Margin=new Padding(0,8,0,8)};
+    private string? psdPath;
     private Plan? plan;private bool busy;
     public MainWindow()
     {
@@ -35,17 +39,17 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.2.0";
+        Text="MOC3 Recovery 1.4.0";
         ClientSize=new Size(960,800);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
 
         var viewport=new Panel(){Dock=DockStyle.Fill,AutoScroll=true};
         var layout=new TableLayoutPanel(){Dock=DockStyle.Fill,Padding=new Padding(24),
-            ColumnCount=1,RowCount=12,MinimumSize=new Size(0,700),Margin=Padding.Empty};
+            ColumnCount=1,RowCount=13,MinimumSize=new Size(0,750),Margin=Padding.Empty};
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         // Text and button rows grow to their preferred heights at every DPI.
-        for(int row=0;row<11;row++)layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        for(int row=0;row<12;row++)layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles[4]=new RowStyle(SizeType.Absolute,112);
         layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));
 
@@ -71,7 +75,7 @@ public sealed class MainWindow : Form
         textures.IntegralHeight=false;textures.Margin=new Padding(0,0,0,8);
         layout.Controls.Add(textures,0,4);
 
-        foreach(var button in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder})
+        foreach(var button in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})
         {
             button.AutoSize=true;button.AutoSizeMode=AutoSizeMode.GrowAndShrink;
             button.Padding=new Padding(12,6,12,6);
@@ -95,9 +99,10 @@ public sealed class MainWindow : Form
         var reportHeading=new Label(){Text="Recovery report",AutoSize=true,
             Font=new Font("Segoe UI",10,FontStyle.Bold),Margin=new Padding(0,8,0,8)};
         inferLinks.Margin=new Padding(0,8,0,8);layout.Controls.Add(inferLinks,0,9);
-        layout.Controls.Add(reportHeading,0,10);
+        layout.Controls.Add(ButtonRow(selectPsd,clearPsd,psdStatus),0,10);
+        layout.Controls.Add(reportHeading,0,11);
         report.Margin=Padding.Empty;report.MinimumSize=new Size(0,140);
-        layout.Controls.Add(report,0,11);
+        layout.Controls.Add(report,0,12);
         viewport.Controls.Add(layout);Controls.Add(viewport);
         // Constrain wrapping labels to the current width, including after a
         // monitor/DPI change. Long status messages must grow their row.
@@ -110,6 +115,11 @@ public sealed class MainWindow : Form
         layout.SizeChanged+=(_,_)=>FitLabels();
         Shown+=(_,_)=>FitLabels();
         ResumeLayout(true);
+        selectPsd.Click+=(_,_)=>{
+            using var dialog=new OpenFileDialog(){Title="Choose optional original layered PSD",Filter="Photoshop document (*.psd)|*.psd"};
+            if(dialog.ShowDialog(this)==DialogResult.OK){psdPath=dialog.FileName;psdStatus.Text="PSD: "+Path.GetFileName(psdPath);}
+        };
+        clearPsd.Click+=(_,_)=>{psdPath=null;psdStatus.Text="PSD: none (optional)";};
         browse.Click+=(_,_)=>ChooseModel();selectTextures.Click+=(_,_)=>ChooseTextures();clearTextures.Click+=(_,_)=>{if(plan!=null){plan.Textures.Clear();RefreshTextures();}};
         up.Click+=(_,_)=>MoveTexture(-1);down.Click+=(_,_)=>MoveTexture(1);convert.Click+=async(_,_)=>await RunConversion();
         openFolder.Click+=(_,_)=>{if(plan!=null)Process.Start(new ProcessStartInfo("explorer.exe"){ArgumentList={Path.GetDirectoryName(plan.Output)!},UseShellExecute=true});};
@@ -122,7 +132,7 @@ public sealed class MainWindow : Form
         if(dialog.ShowDialog(this)!=DialogResult.OK)return;
         try
         {
-            var next=Recovery.Inspect(dialog.FileName, AppContext.BaseDirectory);plan=next;input.Text=next.Input;
+            var next=Recovery.Inspect(dialog.FileName, AppContext.BaseDirectory);plan=next;psdPath=null;psdStatus.Text="PSD: none (optional)";input.Text=next.Input;
             destination.Text="Output: "+next.Output;RefreshTextures();convert.Enabled=true;openFolder.Enabled=true;
             report.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics and parameter folders will be restored from companion files when available. Other runtime settings are preserved in the recovery ZIP.";
             status.Text="Ready to create "+Path.GetFileName(next.Output)+".";
@@ -151,8 +161,9 @@ public sealed class MainWindow : Form
             replace=MessageBox.Show(this,"These output files already exist:\r\n\r\n"+string.Join("\r\n",existing)+"\r\n\r\nReplace them? Existing files will be kept as timestamped .bak files.","Replace existing outputs?",MessageBoxButtons.YesNo,MessageBoxIcon.Question)==DialogResult.Yes;
             if(!replace)return;
         }
+        plan.PsdInput=psdPath;
         plan.InferParameterLinks=inferLinks.Checked;inferLinks.Enabled=false;
-        busy=true;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder})b.Enabled=false;progress.Visible=true;
+        busy=true;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=false;progress.Visible=true;
         var temp=Path.Combine(Path.GetTempPath(),"MocRecovery-"+Guid.NewGuid().ToString("N"));
         try
         {
@@ -167,7 +178,7 @@ public sealed class MainWindow : Form
         catch(Exception e){status.Text="Recovery failed.";report.Text="RECOVERY FAILED\r\n\r\n"+e.Message;MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally
         {
-            inferLinks.Enabled=true;busy=false;progress.Visible=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder})b.Enabled=true;
+            inferLinks.Enabled=true;busy=false;progress.Visible=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
             try{Directory.Delete(temp,true);}catch{}
         }
     }

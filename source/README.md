@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.4.0
+# MOC3 Recovery for Windows — 1.4.1
 
-Documentation revision 3 (application remains v1.4.0).
+Version 1.4.1 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -131,7 +131,7 @@ Matching is conservative: unique name candidates restore mesh display labels onl
 
 A PSD supplies artwork and layer metadata. It does **not** supply Live2D deformer names or IDs, mesh vertices/triangles, parameter bindings, deformation keyforms, or rigging. Importing a PSD therefore cannot restore those items when they are missing from the compiled model and companion files. For example, a mouth layer can restore the mouth artwork, but not an omitted mouth mesh or its animation setup.
 
-Deformer IDs and friendly display names are different. Our RedFoxGirl investigation found original IDs such as `Warp29` and `Rotation` in the MOC3, but did not find the friendly labels `wholebody` and `HeadRotation`. Version 1.4.0 still generates deformer labels; preserving the stored IDs has not yet been implemented. The PSD does not fill this gap. Any names inferred from artwork or affected parameters would be suggestions, not recovered original deformer names.
+Deformer IDs and friendly display names are different. Our RedFoxGirl investigation found original IDs such as `Warp29` and `Rotation` in the MOC3, but did not find the friendly labels `wholebody` and `HeadRotation`. Version 1.4.1 still generates deformer labels; preserving the stored IDs has not yet been implemented. The PSD does not fill this gap. Any names inferred from artwork or affected parameters would be suggestions, not recovered original deformer names.
 
 Supported: standard 8-bit RGB PSD; raw, PackBits/RLE, ZIP and ZIP prediction channel compression. PSB, 16-/32-bit and other color modes are not supported. Raster layer masks, vector masks, effects and non-normal blend appearance are not reconstructed; warnings identify detected cases. Smart objects use their stored raster previews. Original PSD bytes preserve those features for manual work. Very large layers may require substantial memory; individual layers above 180 million pixels are reported as unsupported. If a selected PSD is invalid, conversion reports the error; clear the PSD selection to run without it.
 
@@ -140,3 +140,9 @@ RedFoxGirl verification: 35 raster layers imported; raw RGBA matched an independ
 The native source-image group still needs visual confirmation in Windows/Cubism. This is the main item to test before relying on the imported source-artwork workflow.
 
 Optional PSD tests: `dotnet run --project source/PsdTests/Psd.Tests.csproj -c Release` runs the small synthetic fixture. Supply PSD, MOC3, platform-appropriate engine and an empty output directory as four arguments to exercise a full import.
+
+## Version 1.4.1 — detect SDK compatibility target
+
+The recovered project target is now selected from the MOC3 header instead of retaining the backend’s fixed 3.0 setting. Supported header mappings are Cubism 3.0, 3.3, 4.0, 4.2, 5.0 and 5.3. Unknown versions are rejected rather than guessed. The detected target is listed in the recovery report.
+
+RedFoxGirl’s header identifies 4.2; its recovered targetVersionNo is now 4020000, matching the reference project. No original CMO3 is needed during conversion. This identifies compiled-format compatibility, not the original Editor build, and does not guarantee full recovery of every version-specific feature. The Windows/Cubism dropdown still needs visual confirmation.

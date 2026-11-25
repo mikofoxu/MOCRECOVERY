@@ -18,6 +18,10 @@ Check(text.Contains("Native physics setups restored: 12") && text.Contains("Nati
 var archiveData=CaffArchive.Read(p.Output);
 var xml=System.Xml.Linq.XDocument.Load(new MemoryStream(archiveData["main.xml"]));
 ProjectEnricher.Validate(xml);
+Check(xml.Descendants("CModelSource").Single(e=>e.HasElements).Elements("i").Single(e=>(string?)e.Attribute("xs.n")=="targetVersionNo").Value=="4020000","RedFoxGirl SDK 4.2 target restored from MOC header");
+Check(text.Contains("compatibility target restored from MOC3: 4.2"),"detected SDK target reported");
+foreach(var pair in new[]{(1,3000000),(2,3030000),(3,4000000),(4,4020000),(5,5000000),(6,5030000)})Check(SdkTarget.FromMocVersion((byte)pair.Item1).Target==pair.Item2,"MOC version mapping "+pair.Item1);
+try{SdkTarget.FromMocVersion(255);throw new Exception("Unknown version accepted");}catch(InvalidDataException){Console.WriteLine("PASS: unknown MOC version rejected");}
 Check(xml.Descendants("CPhysicsInput").Count()==26 && xml.Descendants("CPhysicsOutput").Count()==12 && xml.Descendants("CPhysicsVertex").Count()==44,"physics inputs, outputs and particle counts");
 Check(xml.Descendants("CParameterGroup").Count(e=>e.HasElements)==2,"root group plus expression folder");
 Check(text.Contains("meshes: 38")&&text.Contains("parameters: 49")&&text.Contains("Display names restored from CDI: 50"),"recovered counts and CDI names");

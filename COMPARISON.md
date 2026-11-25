@@ -59,3 +59,7 @@ RedFoxGirl: 6 expression snapshots, 38 meshes, 315 mesh keyforms, 399 local inte
 
 ## Version 1.4.0
 Optional PSD import adds source images without changing atlas rig links. RedFoxGirl PSD: 35 raster layers, 29 unique name candidates, two ambiguous fronthair names and four unmatched layer names. Exact raw pixel equality against an independent PSD reader; embedded ICC profile preserved. Existing rig validation remains at 38 meshes, 315 keyforms and 399 local samples. Windows/Cubism source-image display still requires user testing.
+
+
+## Version 1.4.1
+RedFoxGirl MOC3 header version 4 maps to SDK/Cubism 4.2. The recovered targetVersionNo is 4020000, matching the original reference. Header mappings and rejection of unknown versions were checked, and the recovery regression suite passed. No original project is required at runtime. Windows dropdown display remains to be visually confirmed.

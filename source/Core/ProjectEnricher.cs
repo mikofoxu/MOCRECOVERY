@@ -23,7 +23,8 @@ public static class ProjectEnricher
         var model=doc.Descendants("CModelSource").Single(e=>e.HasElements);
         var parameters=model.Descendants("CParameterSource").Where(e=>e.HasElements).ToDictionary(e=>(string)e.Element("CParameterId")!.Attribute("idstr")!,e=>e);
         var parameterGuids=parameters.ToDictionary(k=>k.Key,k=>(string)k.Value.Element("CParameterGuid")!.Attribute("xs.ref")!);
-        var notes=new List<string>();int physics=0,groups=0;
+        var sdkTarget=SdkTarget.Apply(doc,plan.Input);
+        var notes=new List<string>{"SDK/Cubism compatibility target restored from MOC3: "+sdkTarget+". This does not identify the original Editor build or prove full feature equivalence."};int physics=0,groups=0;
         if(plan.DisplayInfo!=null)
         {
             try

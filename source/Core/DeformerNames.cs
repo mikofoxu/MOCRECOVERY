@@ -23,6 +23,48 @@ public static class DeformerNames
         if(result.Distinct(StringComparer.Ordinal).Count()!=count)throw new InvalidDataException("Duplicate stored deformer IDs.");
         return result;
     }
+    public static List<string> NameFromArtMeshes(string archivePath)
+    {
+        var entries=CaffArchive.Read(archivePath);
+        var doc=XDocument.Load(new MemoryStream(entries["main.xml"]));
+        var notes=NameFromArtMeshes(doc);
+        using var ms=new MemoryStream();
+        using(var writer=XmlWriter.Create(ms,new XmlWriterSettings{Encoding=new UTF8Encoding(false),Indent=true,CloseOutput=false}))doc.Save(writer);
+        entries["main.xml"]=ms.ToArray();CaffArchive.Write(archivePath,entries);
+        return notes;
+    }
+    public static List<string> NameFromArtMeshes(XDocument doc)
+    {
+        string? Ref(XElement e,string field)=>(string?)e.Descendants("CDeformerGuid").SingleOrDefault(g=>(string?)g.Attribute("xs.n")==field)?.Attribute("xs.ref");
+        var sources=doc.Descendants().Where(e=>e.HasElements&&(e.Name=="CWarpDeformerSource"||e.Name=="CRotationDeformerSource")).ToArray();
+        var byGuid=sources.ToDictionary(e=>Ref(e,"guid")??throw new InvalidDataException("Deformer GUID missing."));
+        var names=byGuid.Keys.ToDictionary(k=>k,k=>new HashSet<string>(StringComparer.Ordinal));
+        foreach(var mesh in doc.Descendants("CArtMeshSource").Where(e=>e.HasElements))
+        {
+            string? name=mesh.Descendants("s").SingleOrDefault(e=>(string?)e.Attribute("xs.n")=="localName")?.Value;
+            if(string.IsNullOrWhiteSpace(name))continue;
+            string? parent=Ref(mesh,"targetDeformerGuid");var visited=new HashSet<string>();
+            while(parent!=null&&byGuid.TryGetValue(parent,out var deformer))
+            {
+                if(!visited.Add(parent))throw new InvalidDataException("Cycle in deformer hierarchy while deriving display names.");
+                names[parent].Add(name);parent=Ref(deformer,"targetDeformerGuid");
+            }
+        }
+        var notes=new List<string>();int changed=0,ambiguous=0,empty=0;
+        foreach(var (guid,source) in byGuid)
+        {
+            var candidates=names[guid];string id=(string)source.Descendants("CDeformerId").Single().Attribute("idstr")!;
+            var label=source.Descendants("s").Single(e=>(string?)e.Attribute("xs.n")=="localName");
+            if(candidates.Count==1)
+            {
+                string name=candidates.Single();if(label.Value!=name){label.Value=name;changed++;notes.Add($"INFERRED DEFORMER NAME: {id} → {name} (from controlled ArtMesh names; ID unchanged).");}
+            }
+            else if(candidates.Count>1){ambiguous++;notes.Add($"DEFORMER NAME RETAINED: {id} controls differently named ArtMeshes: "+string.Join(", ",candidates.Order(StringComparer.Ordinal))+".");}
+            else empty++;
+        }
+        notes.Insert(0,$"Deformer display names derived from ArtMeshes: {changed}; ambiguous: {ambiguous}; without named ArtMeshes: {empty}. IDs are unchanged. Names are inferred, not recovered original labels.");
+        return notes;
+    }
     public static string Apply(XDocument doc,string mocPath)
     {
         try
@@ -46,7 +88,7 @@ public static class DeformerNames
                 source.Descendants("s").Single(e=>(string?)e.Attribute("xs.n")=="localName").Value=ids[index];
                 guid.SetAttributeValue("note",ids[index]);
             }
-            return $"Stored deformer IDs preserved as IDs and display names: {ids.Length}. Original friendly Editor labels are not inferred.";
+            return $"Stored deformer IDs preserved as IDs and display names: {ids.Length}. Stored IDs are the initial display labels; the later ArtMesh naming pass may change display labels only.";
         }
         catch(Exception e) when(e is InvalidDataException or OverflowException or DecoderFallbackException or XmlException or InvalidOperationException or KeyNotFoundException)
         {return "DEFORMER IDS NOT RESTORED: "+e.Message+" Generated names retained.";}

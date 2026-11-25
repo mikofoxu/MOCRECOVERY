@@ -21,7 +21,18 @@ ProjectEnricher.Validate(xml);
 var storedIds=DeformerNames.ReadIds(File.ReadAllBytes(model));
 var deformers=xml.Descendants().Where(e=>e.HasElements&&(e.Name=="CWarpDeformerSource"||e.Name=="CRotationDeformerSource")).ToArray();
 Check(deformers.Select(e=>(string)e.Descendants("CDeformerId").Single().Attribute("idstr")!).ToHashSet().SetEquals(storedIds),"all 37 stored deformer IDs preserved");
-Check(deformers.All(e=>e.Descendants("s").Single(s=>(string?)s.Attribute("xs.n")=="localName").Value==(string)e.Descendants("CDeformerId").Single().Attribute("idstr")!),"deformer display labels use stored IDs");
+var tailDeformer=deformers.Single(e=>(string?)e.Descendants("CDeformerId").Single().Attribute("idstr")=="Warp21");
+Check(tailDeformer.Descendants("s").Single(s=>(string?)s.Attribute("xs.n")=="localName").Value=="tail","tail mesh names Warp21 without changing its ID");
+var namingFixture=new System.Xml.Linq.XDocument(xml);
+foreach(var d in namingFixture.Descendants().Where(e=>e.HasElements&&(e.Name=="CWarpDeformerSource"||e.Name=="CRotationDeformerSource")))
+ d.Descendants("s").Single(e=>(string?)e.Attribute("xs.n")=="localName").Value=(string)d.Descendants("CDeformerId").Single().Attribute("idstr")!;
+var beforeNames=new System.Xml.Linq.XDocument(namingFixture);
+var namingNotes=DeformerNames.NameFromArtMeshes(namingFixture);
+foreach(var document in new[]{beforeNames,namingFixture})
+ foreach(var d in document.Descendants().Where(e=>e.HasElements&&(e.Name=="CWarpDeformerSource"||e.Name=="CRotationDeformerSource")))
+  d.Descendants("s").Single(e=>(string?)e.Attribute("xs.n")=="localName").Value="ignored display label";
+Check(System.Xml.Linq.XNode.DeepEquals(beforeNames,namingFixture),"ArtMesh naming changes only display labels; IDs, references and rig data unchanged");
+Check(namingNotes.Any(n=>n.StartsWith("DEFORMER NAME RETAINED: Warp29 ")),"multi-mesh parent keeps its name when ambiguous");
 Check(text.Contains("Stored deformer IDs preserved as IDs and display names: 37"),"deformer naming result reported");
 // Replace one ID in a copy to exercise a descriptive UTF-8 name, including XML escaping.
 var fixture=File.ReadAllBytes(model);int idOffset=System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(fixture.AsSpan(64+11*4,4));

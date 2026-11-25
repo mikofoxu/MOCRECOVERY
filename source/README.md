@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.4.2
+# MOC3 Recovery for Windows — 1.4.3
 
-Version 1.4.2 (includes the responsible-use notice and PSD limitations).
+Version 1.4.3 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -131,7 +131,7 @@ Matching is conservative: unique name candidates restore mesh display labels onl
 
 A PSD supplies artwork and layer metadata. It does **not** supply Live2D deformer names or IDs, mesh vertices/triangles, parameter bindings, deformation keyforms, or rigging. Importing a PSD therefore cannot restore those items when they are missing from the compiled model and companion files. For example, a mouth layer can restore the mouth artwork, but not an omitted mouth mesh or its animation setup.
 
-Deformer IDs and friendly display names are different. Our RedFoxGirl investigation found original IDs such as `Warp29` and `Rotation` in the MOC3, but did not find the friendly labels `wholebody` and `HeadRotation`. Version 1.4.2 preserves stored deformer IDs and uses them as display names. This does not restore separate friendly labels absent from the MOC3. The PSD does not fill this gap. Any names inferred from artwork or affected parameters would be suggestions, not recovered original deformer names.
+Deformer IDs and friendly display names are different. Our RedFoxGirl investigation found original IDs such as `Warp29` and `Rotation` in the MOC3, but did not find the friendly labels `wholebody` and `HeadRotation`. Version 1.4.3 preserves stored deformer IDs; display names are derived from controlled ArtMeshes when unambiguous. This does not restore separate friendly labels absent from the MOC3. The PSD does not fill this gap. Any names inferred from artwork or affected parameters would be suggestions, not recovered original deformer names.
 
 Supported: standard 8-bit RGB PSD; raw, PackBits/RLE, ZIP and ZIP prediction channel compression. PSB, 16-/32-bit and other color modes are not supported. Raster layer masks, vector masks, effects and non-normal blend appearance are not reconstructed; warnings identify detected cases. Smart objects use their stored raster previews. Original PSD bytes preserve those features for manual work. Very large layers may require substantial memory; individual layers above 180 million pixels are reported as unsupported. If a selected PSD is invalid, conversion reports the error; clear the PSD selection to run without it.
 
@@ -152,3 +152,11 @@ RedFoxGirl’s header identifies 4.2; its recovered targetVersionNo is now 40200
 Reads the MOC3 deformer ID table and preserves those IDs as both deformer IDs and display names. Descriptive stored IDs remain descriptive; generic stored IDs such as Warp29 remain unchanged instead of being renumbered. No original CMO3 or PSD is required. This does not infer missing friendly names.
 
 The mapping uses the backend’s explicit deformer indices, not name similarity or hierarchy guesses. Invalid, empty, duplicate or unsupported ID data is reported and generated names are retained. Both endianness flags are handled. RedFoxGirl’s 37 IDs and a descriptive UTF-8/special-character test passed, along with the recovery regression suite. Windows/Cubism visual confirmation remains outstanding.
+
+## Version 1.4.3 — ArtMesh-based deformer display names
+
+Stored deformer IDs remain unchanged. A deformer controlling ArtMeshes with one distinct display name receives that name, including through nested child deformers. For example, ID Warp21 remains Warp21 while its display name becomes tail. If controlled meshes have different names, or no named meshes are found, the existing display name is retained. Matching uses exact ArtMesh display names; no arbitrary choice or semantic guessing is made.
+
+This naming pass runs after optional PSD import, so it uses the final ArtMesh labels. It changes only deformer localName fields, not IDs, GUIDs, hierarchy, bindings or geometry. Every change and ambiguous result is listed in the report. These labels are inferred conveniences, not recovered original authoring names. No PSD or original CMO3 is required.
+
+Tests confirm the tail example, all 37 original IDs, unchanged non-name XML data, ambiguous-parent handling and the existing recovery checks. Windows/Cubism display still needs visual confirmation.

@@ -161,10 +161,11 @@ public static class Recovery
                 progress?.Report("Importing optional PSD source artwork… Large layers may take a few minutes.");
                 psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"));
             }
+            var deformerNames=DeformerNames.NameFromArtMeshes(staged);
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"));
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.4.2").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.4.3").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -192,6 +193,7 @@ public static class Recovery
             report.AppendLine("Also checked UVs, triangles, clipping references/flags, culling, draw order, opacity, and physics numeric/range/particle references.");
             foreach(var note in validation.Warnings)report.AppendLine("REVIEW: "+note);
             report.AppendLine("Not verified: world-space deformer evaluation, rendered clipping/compositing, physics simulation, or every parameter combination. Import editor-import/validation/parameter-sweep.motion3.json to review the recovered model visually.");
+            foreach(var note in deformerNames)report.AppendLine(note);
             int required=s.GetProperty("requiredTextures").GetInt32();
             report.AppendLine($"Texture pages required: {required}; supplied existing PNGs: {plan.Textures.Count(File.Exists)}.");
             report.AppendLine().AppendLine("MISSING OR UNCONFIRMED INPUTS");

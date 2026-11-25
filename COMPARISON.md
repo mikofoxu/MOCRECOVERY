@@ -67,3 +67,7 @@ RedFoxGirl MOC3 header version 4 maps to SDK/Cubism 4.2. The recovered targetVer
 
 ## Version 1.4.2
 All 37 stored RedFoxGirl deformer IDs are now preserved as IDs and display labels. Descriptive UTF-8 and XML-special-character identifiers were also tested. Existing SDK-target and recovery regression checks passed. Friendly names absent from the compiled file remain unavailable.
+
+
+## Version 1.4.3
+ArtMesh-derived naming changes only deformer display labels. RedFoxGirl: 14 labels derived, 23 ambiguous labels retained; all 37 IDs unchanged. Warp21 displays as tail. Tests verify unchanged non-name XML data and existing recovery checks.

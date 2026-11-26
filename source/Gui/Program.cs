@@ -33,7 +33,6 @@ public sealed class MainWindow : Form
     private readonly CheckBox matchPsd=new(){Text="Try preserving PSD layer names using artwork matching (experimental)",Checked=true,Enabled=false,AutoSize=true};
     private readonly CheckBox relinkPsd=new(){Text="Attempt PSD texture relinking (Warning: Experimental)",Checked=false,Enabled=false,AutoSize=true};
     private readonly Button chooseOutput=new(){Text="Choose output folder…",AutoSize=true};
-    private readonly Button resetOutput=new(){Text="Use app folder",AutoSize=true};
     private readonly Button cancel=new(){Text="Cancel",Enabled=false,AutoSize=true};
     private string outputFolder=AppContext.BaseDirectory;
     private CancellationTokenSource? activeConversion;
@@ -47,7 +46,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.7.1";
+        Text="MOC3 Recovery 1.7.2";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -76,19 +75,17 @@ public sealed class MainWindow : Form
         input.Margin=new Padding(0,0,12,0);
         fileRow.Controls.Add(input,0,0);fileRow.Controls.Add(browse,1,0);
         layout.Controls.Add(fileRow,0,1);
-        var outputRow=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=3,RowCount=1};
+        var outputRow=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=2,RowCount=1};
         outputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         outputRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        outputRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         destination.Anchor=AnchorStyles.Left|AnchorStyles.Right;
-        outputRow.Controls.Add(destination,0,0);outputRow.Controls.Add(chooseOutput,1,0);outputRow.Controls.Add(resetOutput,2,0);
+        outputRow.Controls.Add(destination,0,0);outputRow.Controls.Add(chooseOutput,1,0);
         layout.Controls.Add(outputRow,0,2);
         SetOutputFolder(outputFolder);
         chooseOutput.Click+=(_,_)=>{
             using var picker=new FolderBrowserDialog{InitialDirectory=outputFolder,Description="Choose the folder for recovery outputs",UseDescriptionForTitle=true};
             if(picker.ShowDialog(this)==DialogResult.OK)SetOutputFolder(picker.SelectedPath);
         };
-        resetOutput.Click+=(_,_)=>SetOutputFolder(AppContext.BaseDirectory);
         cancel.Click+=(_,_)=>{
             cancel.Enabled=false;
             activeConversion?.Cancel();
@@ -202,7 +199,7 @@ public sealed class MainWindow : Form
         plan.PsdInput=psdPath;plan.RelinkPsdTextures=psdPath!=null&&relinkPsd.Checked;relinkPsd.Enabled=false;plan.MatchPsdArtwork=psdPath!=null&&matchPsd.Checked;matchPsd.Enabled=false;
         plan.InferParameterLinks=inferLinks.Checked;inferLinks.Enabled=false;
         using var cancellation=new CancellationTokenSource();
-        activeConversion=cancellation;cancel.Enabled=true;chooseOutput.Enabled=resetOutput.Enabled=false;
+        activeConversion=cancellation;cancel.Enabled=true;chooseOutput.Enabled=false;
         busy=true;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=false;progress.Value=0;progressPercent.Text="0%";progress.Visible=true;progressPercent.Visible=true;
         bool acceptingProgress=true;
         var temp=Path.Combine(Path.GetTempPath(),"MocRecovery-"+Guid.NewGuid().ToString("N"));
@@ -225,7 +222,7 @@ public sealed class MainWindow : Form
         catch(Exception e){acceptingProgress=false;status.Text="Recovery failed.";report.Text="RECOVERY FAILED\r\n\r\n"+e.ToString();MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally
         {
-            activeConversion=null;cancel.Enabled=false;chooseOutput.Enabled=resetOutput.Enabled=true;
+            activeConversion=null;cancel.Enabled=false;chooseOutput.Enabled=true;
             inferLinks.Enabled=true;matchPsd.Enabled=psdPath!=null;relinkPsd.Enabled=psdPath!=null&&matchPsd.Checked;busy=false;acceptingProgress=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
             try{Directory.Delete(temp,true);}catch{}
         }

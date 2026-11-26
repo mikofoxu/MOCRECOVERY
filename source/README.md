@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.7.1
+# MOC3 Recovery for Windows — 1.7.2
 
-Version 1.7.1 (includes the responsible-use notice and PSD limitations).
+Version 1.7.2 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -27,7 +27,7 @@ No Python, Rust, Visual Studio, or separate .NET installation is needed to run t
 For `A.moc3`, the app writes these files in the folder containing `MocRecovery.exe`:
 
 - `A.cmo3` — reconstructed editable model.
-- `A.recovery.txt` — the recovery/missing-data report shown in the window.
+- `Output.recovery.txt` — the recovery/missing-data report shown in the window.
 - `A.recovery.zip` — original MOC3, supplied textures, discovered companion files and a JSON dump of the recovered rig.
 
 The app asks before replacing existing output files. If approved, prior outputs are retained as timestamped `.bak` files. Conversion is staged before committing outputs; a failed engine run leaves previous outputs untouched. The input model and companions are never changed.
@@ -74,6 +74,8 @@ Copy-Item engine/target/release/moc-recover.exe engine/moc-recover.exe -Force
 dotnet publish Gui/MocRecovery.csproj -c Release -r win-x64 --self-contained true -o ../publish
 ```
 
+For each release, document the user-visible changes in `source/CHANGES-<version>.md` and place the same entry at the top of `source/CHANGES.md`. Keep previous entries below it. Publishing validates the entry and copies both files alongside the executable. Include those published copies in the Windows ZIP.
+
 The C# test console takes a folder containing the Example runtime export, the native engine path and an EMPTY test output directory. The test program includes a Linux-specific failing-process fixture (`/bin/false`); replace it with a suitable failing executable to run that check on Windows.
 
 ## Attribution
@@ -98,7 +100,7 @@ See COMPARISON.md for remaining differences. Neither Windows GUI execution nor a
 
 ## Version 1.1.1 output location
 
-By default, all generated files are saved beside MocRecovery.exe, using the input basename. For example, with the app in D:\data\MocRecovery and a model elsewhere, A.moc3 produces D:\data\MocRecovery\A.cmo3, A.recovery.txt and A.recovery.zip. The Open folder button opens this output directory. Texture and companion discovery still uses the input model directory. The selected output directory must be writable. Existing output replacement still requires confirmation and retains timestamped backups.
+By default, all generated files are saved beside MocRecovery.exe. For example, with the app in D:\data\MocRecovery and a model elsewhere, A.moc3 produces D:\data\MocRecovery\A.cmo3, Output.recovery.txt and A.recovery.zip. The Open folder button opens this output directory. Texture and companion discovery still uses the input model directory. The selected output directory must be writable. Existing output replacement still requires confirmation and retains timestamped backups.
 
 ## Version 1.2.0 — linked parameter controls
 

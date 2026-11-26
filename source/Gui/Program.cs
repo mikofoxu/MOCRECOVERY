@@ -15,7 +15,7 @@ public sealed class MainWindow : Form
     private readonly TextBox input=new(){ReadOnly=true,Dock=DockStyle.Fill};
     private readonly TextBox destination=new(){ReadOnly=true,Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,BackColor=SystemColors.Control,AccessibleName="Output folder"};
     private readonly ListBox textures=new(){Dock=DockStyle.Fill,HorizontalScrollbar=true};
-    private readonly TextBox report=new(){Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,WordWrap=true,Dock=DockStyle.Fill,Font=new Font("Consolas",10),BackColor=Color.FromArgb(245,247,250)};
+    private readonly Label reportHeaderText = new() { AutoSize = true, Dock = DockStyle.Top, UseMnemonic = false, Margin = Padding.Empty, Font = new Font("Consolas", 10) };
     private readonly Button browse=new(){Text="Choose .moc3…",AutoSize=true};
     private readonly Button selectTextures=new(){Text="Choose textures…",AutoSize=true};
     private readonly Button clearTextures=new(){Text="Clear texture list",AutoSize=true};
@@ -39,14 +39,28 @@ public sealed class MainWindow : Form
     private readonly Button removePsd = new() { Text = "Remove selected", Enabled = false };
     private readonly TabControl tabs = new() { Dock = DockStyle.Fill };
     private readonly TabPage texturePage = new("Texture accuracy") { Padding = new Padding(12) };
-    private readonly TextBox textureText = new() { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, WordWrap = false, ScrollBars = ScrollBars.Both };
+    private readonly TabPage physicsPage = new("Physics") { Padding = new Padding(12) };
+    private readonly Label physicsSummary = new() { AutoSize = true, Dock = DockStyle.Fill };
+    private readonly DataGridView physicsGrid = CreateReportGrid("Applied physics");
+    private readonly DataGridView textureGrid = CreateReportGrid("Texture mapping accuracy by ArtMesh");
+    private static DataGridView CreateReportGrid(string accessibleName) => new()
+    {
+        Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false,
+        AllowUserToDeleteRows = false, AllowUserToResizeRows = false, RowHeadersVisible = false,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect, BackgroundColor = SystemColors.Window,
+        BorderStyle = BorderStyle.None, CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells,
+        AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells,
+        ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
+        ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableAlwaysIncludeHeaderText,
+        AccessibleName = accessibleName
+    };
+    private readonly Label textureSummary = new() { AutoSize = true, Dock = DockStyle.Fill };
     private readonly TabPage reportPage = new("Recovery report") { Padding = new Padding(12) };
     private readonly TextBox fullReport = new() { Dock = DockStyle.Fill, Multiline = true,
         ReadOnly = true, WordWrap = true, ScrollBars = ScrollBars.Vertical, AccessibleName = "Full recovery report" };
     private readonly LinkLabel reportSummary = new() { AutoSize = true };
-    private readonly Button viewReport = new() { Text = "View full report", Visible = false };
     private readonly Button copyFullReport = new() { Text = "Copy report" };
-    private readonly Button copyReport = new() { Text = "Copy report" };
     private readonly CheckBox matchPsd=new(){Text="Try preserving PSD layer names using artwork matching (experimental)",Checked=true,Enabled=false,AutoSize=true};
     private readonly CheckBox relinkPsd=new(){Text="Attempt PSD texture relinking (experimental)",Checked=false,Enabled=false,AutoSize=true};
     private readonly Button chooseOutput=new(){Text="Choose output folder…",AutoSize=true};
@@ -63,21 +77,20 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.92";
+        Text="MOC3 Recovery 1.93";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
         WindowState=FormWindowState.Maximized;
 
         var viewport=new Panel(){Dock=DockStyle.Fill,AutoScroll=true};
-        var layout=new TableLayoutPanel(){Dock=DockStyle.Fill,Padding=new Padding(24),
-            ColumnCount=1,RowCount=14,MinimumSize=new Size(0,890),Margin=Padding.Empty};
+        var layout=new TableLayoutPanel(){Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Padding=new Padding(24),
+            ColumnCount=1,RowCount=14,Margin=Padding.Empty};
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         // Text and button rows grow to their preferred heights at every DPI.
-        for(int row=0;row<13;row++)layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        for(int row=0;row<14;row++)layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles[3]=new RowStyle(SizeType.Absolute,80);
         layout.RowStyles[6]=new RowStyle(SizeType.Absolute,80);
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));
 
         var title=new Label(){Text="Recover an editable Cubism project",
             Font=new Font("Segoe UI",18,FontStyle.Bold),AutoSize=true,
@@ -119,7 +132,7 @@ public sealed class MainWindow : Form
         textures.IntegralHeight=false;textures.Margin=new Padding(0,0,0,8);
         layout.Controls.Add(textures,0,3);
 
-        foreach(var button in new[]{browse,chooseOutput,selectTextures,clearTextures,up,down,convert,cancel,openFolder,selectPsd,removePsd,clearPsd,copyReport,viewReport,copyFullReport})
+        foreach(var button in new[]{browse,chooseOutput,selectTextures,clearTextures,up,down,convert,cancel,openFolder,selectPsd,removePsd,clearPsd,copyFullReport})
         {
             button.AutoSize=true;button.AutoSizeMode=AutoSizeMode.GrowAndShrink;
             button.Padding=new Padding(12,6,12,6);
@@ -163,34 +176,30 @@ public sealed class MainWindow : Form
         progressRow.Controls.Add(progress,0,0);progressRow.Controls.Add(progressPercent,1,0);layout.Controls.Add(progressRow,0,10);
         var reportHeading=new Label(){Text="Recovery report",AutoSize=true,
             Font=new Font("Segoe UI",10,FontStyle.Bold),Margin=new Padding(0,8,0,8)};
-        var reportHeader = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true,
-            ColumnCount = 2, RowCount = 1, Margin = Padding.Empty };
-        reportHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        reportHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        reportHeader.Controls.Add(reportHeading, 0, 0);
-        reportHeader.Controls.Add(ButtonRow(viewReport, copyReport), 1, 0);
-        layout.Controls.Add(reportHeader, 0, 11);
+        layout.Controls.Add(reportHeading, 0, 11);
         status.Margin = new Padding(0, 0, 0, 8);
         layout.Controls.Add(status, 0, 12);
-        report.Margin = Padding.Empty;
-        report.MinimumSize = new Size(0, 140);
-        layout.Controls.Add(report, 0, 13);
+        layout.Controls.Add(reportHeaderText, 0, 13);
         void CopyReport(object? sender, EventArgs args)
         {
-            try { if (report.TextLength > 0) Clipboard.SetText(report.Text); }
+            try { if (fullReport.TextLength > 0) Clipboard.SetText(fullReport.Text); }
             catch (System.Runtime.InteropServices.ExternalException e)
             { MessageBox.Show(this, e.Message, "Unable to copy report"); }
         }
-        copyReport.Click += CopyReport;
         copyFullReport.Click += CopyReport;
-        viewReport.Click += (_, _) => tabs.SelectedTab = reportPage;
         status.LinkClicked += (_, _) => ShowWarnings();
         reportSummary.LinkClicked += (_, _) => ShowWarnings();
         var recoveryPage = new TabPage("Recovery");
         viewport.Controls.Add(layout);
         recoveryPage.Controls.Add(viewport);
         tabs.TabPages.Add(recoveryPage);
-        texturePage.Controls.Add(textureText);
+        BuildReportPage(texturePage, textureGrid, textureSummary, "Texture mapping accuracy", TextureReportData.Explanation,
+            ["ArtMesh", "Before (%)", "Vertices in tolerance after", "After (%)", "Worst before (px)", "Worst after (px)", "Reason"],
+            ["Before (%)", "Vertices in tolerance after", "After (%)", "Worst before (px)", "Worst after (px)"]);
+        BuildReportPage(physicsPage, physicsGrid, physicsSummary, "Applied physics",
+            "Inputs drive each group. Outputs show the parameter and particle they use.",
+            ["Group", "Group ID", "Item", "Parameter", "Axis", "Weight (%)", "Scale", "Vertex", "Reflect", "Details"],
+            ["Weight (%)", "Scale", "Vertex"]);
         Controls.Add(tabs);
 
         var reader = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, ColumnCount = 2 };
@@ -201,7 +210,7 @@ public sealed class MainWindow : Form
         reportSummary.Anchor = AnchorStyles.Left;
         reader.Controls.Add(reportSummary, 0, 0);
         reader.Controls.Add(copyFullReport, 1, 0);
-        fullReport.Font = report.Font;
+        fullReport.Font = reportHeaderText.Font;
         reader.Controls.Add(fullReport, 0, 1);
         reader.SetColumnSpan(fullReport, 2);
         reportPage.Controls.Add(reader);
@@ -216,7 +225,7 @@ public sealed class MainWindow : Form
                 int available = Math.Max(1, width / 2 - option.Margin.Horizontal);
                 if (option.MaximumSize.Width != available) option.MaximumSize = new Size(available, 0);
             }
-            foreach(var label in new[]{title,textureHeading,status})
+            foreach(var label in new[]{title,textureHeading,status,reportHeaderText})
                 if(label.MaximumSize.Width!=width)label.MaximumSize=new Size(width,0);
         }
         layout.SizeChanged+=(_,_)=>FitLabels();
@@ -252,21 +261,55 @@ public sealed class MainWindow : Form
         up.Click+=(_,_)=>MoveTexture(-1);down.Click+=(_,_)=>MoveTexture(1);convert.Click+=async(_,_)=>await RunConversion();
         openFolder.Click+=(_,_)=>{if(plan!=null)Process.Start(new ProcessStartInfo("explorer.exe"){ArgumentList={Path.GetDirectoryName(plan.Output)!},UseShellExecute=true});};
         FormClosing+=(_,e)=>{if(busy){e.Cancel=true;status.Text="Please wait for conversion to finish before closing.";}};
-        report.Text="Choose a .moc3 file. The app saves the same filename with .cmo3 in the selected output folder (the app folder by default).\r\n\r\nThe recovery report below lists missing inputs and features that cannot be restored. The original model and detected companion files are also preserved in a recovery ZIP.\r\n\r\nAn exact original project cannot be recreated from compiled data alone.";
     }
+    private void BuildReportPage(TabPage page, DataGridView grid, Label summary, string heading, string explanation,
+        string[] columns, string[] numericColumns)
+    {
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4 };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        for (int i = 0; i < 3; i++) layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.Controls.Add(new Label { Text = heading, AutoSize = true,
+            Font = new Font(Font, FontStyle.Bold), Margin = new Padding(4, 2, 4, 8) }, 0, 0);
+        layout.Controls.Add(new Label { Text = explanation, AutoSize = true,
+            Dock = DockStyle.Fill, Margin = new Padding(4, 0, 4, 8) }, 0, 1);
+        summary.Margin = new Padding(4, 0, 4, 16);
+        layout.Controls.Add(summary, 0, 2);
+        grid.DefaultCellStyle.Padding = new Padding(12, 5, 12, 5);
+        grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(12, 6, 12, 6);
+        grid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
+        grid.AlternatingRowsDefaultCellStyle.BackColor = SystemInformation.HighContrast
+            ? SystemColors.Window : Color.FromArgb(246, 248, 250);
+        foreach (string title in columns)
+        {
+            var column = grid.Columns[grid.Columns.Add(title, title)];
+            column.SortMode = DataGridViewColumnSortMode.NotSortable;
+            var alignment = numericColumns.Contains(title) ? DataGridViewContentAlignment.MiddleRight
+                : DataGridViewContentAlignment.MiddleLeft;
+            column.DefaultCellStyle.Alignment = alignment;
+            column.HeaderCell.Style.Alignment = alignment;
+        }
+        layout.Controls.Add(grid, 0, 3);
+        page.Controls.Add(layout);
+    }
+
     private void ResetReportTab()
     {
+        tabs.TabPages.Remove(physicsPage);
+        physicsGrid.Rows.Clear();
+        physicsSummary.Text = "";
         tabs.TabPages.Remove(texturePage);
-        textureText.Clear();
+        textureGrid.Rows.Clear();
+        textureSummary.Text = "";
         tabs.TabPages.Remove(reportPage);
-        viewReport.Visible = false;
         fullReport.Clear();
+        reportHeaderText.Text = "";
         status.LinkArea = new LinkArea(0, 0);
     }
 
     private void OpenCompletedReport(Plan completed)
     {
-        fullReport.Text = report.Text;
+        reportHeaderText.Text = string.Join(Environment.NewLine, fullReport.Lines.Take(3));
         string summary = Path.GetFileName(completed.Output) + " saved   ·   " + completed.CompletionSummary;
         string warningText = "Engine and validation warnings: " + completed.WarningCount;
         var warningLink = completed.WarningCount > 0
@@ -278,9 +321,20 @@ public sealed class MainWindow : Form
             label.LinkArea = warningLink;
         }
         tabs.TabPages.Add(reportPage);
-        textureText.Text = File.ReadAllText(completed.TextureReport);
+        var measurements = completed.TextureMeasurements!;
+        textureSummary.Text = measurements.Summary;
+        textureGrid.Columns["Reason"]!.Visible = measurements.Rows.Any(row => row.Reason != null);
+        foreach (var row in measurements.Rows)
+            textureGrid.Rows.Add(row.Id, row.Before, row.WithinTolerance, row.After, row.WorstBefore, row.WorstAfter, row.Reason ?? string.Empty);
+        textureGrid.ClearSelection();
         tabs.TabPages.Add(texturePage);
-        viewReport.Visible = true;
+        var physics = completed.AppliedPhysics!;
+        physicsSummary.Text = physics.Summary;
+        foreach (var row in physics.Rows)
+            physicsGrid.Rows.Add(row.Group, row.Id, row.Item, row.Parameter, row.Axis, row.Weight,
+                row.Scale, row.Vertex, row.Reflect, row.Details);
+        physicsGrid.ClearSelection();
+        tabs.TabPages.Add(physicsPage);
         tabs.SelectedTab = reportPage;
         fullReport.Select(0, 0);
         fullReport.ScrollToCaret();
@@ -321,7 +375,7 @@ public sealed class MainWindow : Form
             var next=Recovery.Inspect(dialog.FileName, outputFolder);plan=next;ResetReportTab();psdList.Items.Clear();UpdatePsdControls();input.Text=next.Input;
             progress.Value=0;progressPercent.Text="0%";progress.Visible=false;progressPercent.Visible=false;
             RefreshTextures();convert.Enabled=true;openFolder.Enabled=true;
-            report.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics and parameter folders will be restored from companion files when available. Other runtime settings are preserved in the recovery ZIP.";
+            reportHeaderText.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics and parameter folders will be restored from companion files when available. Other runtime settings are preserved in the recovery ZIP.";
             status.Text="Ready to create "+Path.GetFileName(next.Output)+".";
         }
         catch(Exception e){MessageBox.Show(this,e.Message,"Unable to read model",MessageBoxButtons.OK,MessageBoxIcon.Error);}
@@ -349,7 +403,6 @@ public sealed class MainWindow : Form
             if(!replace)return;
         }
         ResetReportTab();
-        report.Clear();
         var psdPaths = psdList.Items.Cast<ListViewItem>().Select(item => item.Name).ToList();
         plan.PsdInputs.Clear();plan.PsdInputs.AddRange(psdPaths);plan.RelinkPsdTextures=psdPaths.Count>0&&relinkPsd.Checked;relinkPsd.Enabled=false;plan.MatchPsdArtwork=psdPaths.Count>0&&matchPsd.Checked;matchPsd.Enabled=false;
         plan.InferDeformerNames=inferDeformerNames.Checked;inferDeformerNames.Enabled=false;
@@ -366,16 +419,16 @@ public sealed class MainWindow : Form
             using(var file=File.Create(engine))await resource.CopyToAsync(file,cancellation.Token);
             var updates=new Progress<RecoveryProgress>(p=>{if(!acceptingProgress||cancellation.IsCancellationRequested)return;if(p.Percent>=98)cancel.Enabled=false;progress.Value=p.Percent;progressPercent.Text=p.Percent+"%";status.Text=p.Message;});
             var selected=plan;
-            report.Text=await Task.Run(()=>Recovery.ConvertAsync(selected,engine,replace,numericProgress:updates,cancellationToken:cancellation.Token));
+            fullReport.Text=await Task.Run(()=>Recovery.ConvertAsync(selected,engine,replace,numericProgress:updates,cancellationToken:cancellation.Token));
             acceptingProgress=false;progress.Value=100;progressPercent.Text="100%";
             OpenCompletedReport(selected);
         }
         catch(OperationCanceledException) when(cancellation.IsCancellationRequested)
         {
             acceptingProgress=false;progress.Visible=progressPercent.Visible=false;
-            status.Text="Recovery cancelled.";report.Text="Conversion cancelled. Existing output files were preserved.";
+            status.Text="Recovery cancelled.";reportHeaderText.Text="Conversion cancelled. Existing output files were preserved.";
         }
-        catch(Exception e){acceptingProgress=false;status.Text="Recovery failed.";report.Text="RECOVERY FAILED\r\n\r\n"+e.ToString();MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+        catch(Exception e){acceptingProgress=false;status.Text="Recovery failed.";MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally
         {
             activeConversion=null;cancel.Enabled=false;chooseOutput.Enabled=true;

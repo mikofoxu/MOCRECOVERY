@@ -15,6 +15,7 @@ public sealed class Plan
     public required string Output { get; set; }
     public string Report => Path.Combine(Path.GetDirectoryName(Output)!, "Output.recovery.txt");
     public string TextureReport => Path.ChangeExtension(Output, ".texture-accuracy.txt");
+    public TextureReportData? TextureMeasurements { get; internal set; }
     public string Backup => Path.ChangeExtension(Output, ".recovery.zip");
     public List<string> Textures { get; } = [];
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -30,6 +31,7 @@ public sealed class Plan
     public bool InferParameterLinks { get; set; } = true;
     public List<string> Notes { get; } = [];
     public string? DisplayInfo { get; set; }
+    public PhysicsReport? AppliedPhysics { get; internal set; }
     public string? PhysicsInfo { get; set; }
     public string[] Outputs => [Output, Report, Backup, TextureReport];
 }
@@ -211,8 +213,10 @@ public static class Recovery
             var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
             supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,out int skippedCrops,cancellationToken));
             var textureReport = Path.Combine(temp,"texture-accuracy.txt");
-            File.WriteAllText(textureReport,TextureAccuracy.Apply(projectXml,recovered.RootElement,plan.Textures));
+            plan.TextureMeasurements = TextureAccuracy.Apply(projectXml,recovered.RootElement,plan.Textures);
+            File.WriteAllText(textureReport,plan.TextureMeasurements.ToReportText());
             PhysicsModelMetadata.Apply(projectXml, projectEntries);
+            plan.AppliedPhysics = PhysicsReport.Read(projectXml,plan.PhysicsInfo,enrichment.Notes);
             ProjectEnricher.Validate(projectXml);
             using(var xmlBytes=new MemoryStream()){projectXml.Save(xmlBytes);projectEntries["main.xml"]=xmlBytes.ToArray();}
             CaffArchive.Write(staged,projectEntries);
@@ -223,7 +227,7 @@ public static class Recovery
             plan.WarningCount = warningCount;
             plan.CompletionSummary = $"Engine and validation warnings: {warningCount}   ·   Atlas mesh crops skipped: {skippedCrops}";
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.92").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.93").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             if (warningCount > 0)
             {
                 report.AppendLine(Plan.WarningHeading);

@@ -5,6 +5,26 @@ using System.Xml.Linq;
 
 namespace MocRecovery;
 
+public sealed record TextureMeshRow(string Id, string Before, string WithinTolerance,
+    string After, string WorstBefore, string WorstAfter, string? Reason = null);
+
+public sealed record TextureReportData(string Summary, IReadOnlyList<TextureMeshRow> Rows)
+{
+    public const string Explanation = "Predicted for re-export using the same atlas layout. Each vertex passes if both UV coordinates are within 0.1 atlas pixel of the input MOC3. Offset is the larger absolute horizontal or vertical difference.";
+
+    public string ToReportText()
+    {
+        var report = new StringBuilder("TEXTURE MAPPING ACCURACY").AppendLine().AppendLine();
+        report.AppendLine(Explanation).AppendLine(Summary).AppendLine();
+        report.AppendLine("ArtMesh  |  Before  |  Vertices within tolerance after correction  |  Worst before  |  Worst after");
+        foreach (var row in Rows)
+            report.AppendLine(row.Reason is null
+                ? $"{row.Id}  |  {row.Before}  |  {row.WithinTolerance} ({row.After})  |  {row.WorstBefore} px  |  {row.WorstAfter} px"
+                : $"{row.Id}  |  Unmeasured: {row.Reason}");
+        return report.ToString();
+    }
+}
+
 internal static class TextureAccuracy
 {
     const double Tolerance = 0.1;
@@ -14,7 +34,7 @@ internal static class TextureAccuracy
     static float[] Values(XElement field) => field.Value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
         .Select(s => float.Parse(s, Invariant)).ToArray();
 
-    internal static string Apply(XDocument doc, JsonElement model, IReadOnlyList<string> textures)
+    internal static TextureReportData Apply(XDocument doc, JsonElement model, IReadOnlyList<string> textures)
     {
         var objects = doc.Descendants().Where(e => e.Attribute("xs.id") != null)
             .ToDictionary(e => (string)e.Attribute("xs.id")!);
@@ -22,7 +42,7 @@ internal static class TextureAccuracy
         var meshes = doc.Descendants("CArtMeshSource").Where(e => e.HasElements)
             .ToDictionary(e => (string)e.Descendants("CDrawableId").Single().Attribute("idstr")!);
         var sizes = new Dictionary<int,(int Width,int Height)>();
-        var lines = new List<(double Worst,string Text)>();
+        var lines = new List<(double Worst,TextureMeshRow Row)>();
         int total = 0, initialAccurate = 0, accurate = 0, skipped = 0;
         foreach (var mesh in model.GetProperty("art_meshes").EnumerateArray())
         {
@@ -81,7 +101,9 @@ internal static class TextureAccuracy
                     positions.Value = values;
                     points.Value = values;
                 }
-                lines.Add((before,FormattableString.Invariant($"{id}  |  {100.0*initiallyGood/n:F2}%  |  {good}/{n} ({100.0*good/n:F2}%)  |  {before:F4} px  |  {after:F4} px")));
+                lines.Add((before, new TextureMeshRow(id, (100.0*initiallyGood/n).ToString("F2",Invariant)+"%",
+                    FormattableString.Invariant($"{good}/{n}"), (100.0*good/n).ToString("F2",Invariant)+"%",
+                    before.ToString("F4",Invariant), after.ToString("F4",Invariant))));
                 total += n;
                 initialAccurate += initiallyGood;
                 accurate += good;
@@ -89,15 +111,11 @@ internal static class TextureAccuracy
             catch (Exception e) when (e is IOException or InvalidDataException or KeyNotFoundException or InvalidOperationException or FormatException or UnauthorizedAccessException)
             {
                 skipped++;
-                lines.Add((-1,$"{id}  |  Unmeasured: {e.Message}"));
+                lines.Add((-1,new TextureMeshRow(id,"—","—","—","—","—",e.Message)));
             }
         }
-        var report = new StringBuilder("TEXTURE MAPPING ACCURACY").AppendLine().AppendLine();
-        report.AppendLine("Predicted for re-export using the same atlas layout. Each vertex passes if both UV coordinates are within 0.1 atlas pixel of the input MOC3. Offset is the larger absolute horizontal or vertical difference.");
-        report.AppendLine(total == 0 ? "Overall: unmeasured." : FormattableString.Invariant($"Overall: {100.0*initialAccurate/total:F2}% before correction; {accurate}/{total} measured vertices ({100.0*accurate/total:F2}%) within tolerance."));
-        report.AppendLine($"Unmeasured meshes: {skipped}.").AppendLine();
-        report.AppendLine("ArtMesh  |  Before  |  Vertices within tolerance after correction  |  Worst before  |  Worst after");
-        foreach (var row in lines.OrderByDescending(row => row.Worst)) report.AppendLine(row.Text);
-        return report.ToString();
+        string overall = total == 0 ? "Overall: unmeasured." : FormattableString.Invariant($"Overall: {100.0*initialAccurate/total:F2}% before correction; {accurate}/{total} measured vertices ({100.0*accurate/total:F2}%) within tolerance.");
+        return new TextureReportData(overall + Environment.NewLine + $"Unmeasured meshes: {skipped}.",
+            lines.OrderByDescending(row => row.Worst).Select(row => row.Row).ToArray());
     }
 }

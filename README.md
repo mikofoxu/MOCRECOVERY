@@ -1,22 +1,22 @@
-# MOC3 Recovery for Windows — 1.92
+# MOC3 Recovery for Windows — 1.93
 
-Version 1.92 adds texture placement correction and an accuracy report. See CHANGES-1.92.md.
+Version 1.93 updates the Texture accuracy tab with aligned columns and more row spacing. See [CHANGES.md](CHANGES.md).
 
-Version 1.91 preserves each warp deformer’s transform mode. See CHANGES-1.91.md.
+Version 1.91 preserves each warp deformer’s transform mode. See [CHANGES.md](CHANGES.md).
 
-Version 1.9 includes editor metadata for recovered physics. See CHANGES-1.9.md.
+Version 1.9 includes editor metadata for recovered physics. See [CHANGES.md](CHANGES.md).
 
-Version 1.8.6 adds indexed PNG atlas support for mesh crops and PSD matching. See CHANGES-1.8.6.md.
+Version 1.8.6 adds indexed PNG atlas support for mesh crops and PSD matching. See [CHANGES.md](CHANGES.md).
 
-Version 1.8.5 groups recovery options into two columns and adds a PSD list and scrollable report with copying. See CHANGES-1.8.5.md.
+Version 1.8.5 groups recovery options into two columns and adds a PSD list and scrollable report with copying. See [CHANGES.md](CHANGES.md).
 
-Version 1.8.4 aligns the file and folder buttons on the left and displays their paths on the right. See CHANGES-1.8.4.md.
+Version 1.8.4 aligns the file and folder buttons on the left and displays their paths on the right. See [CHANGES.md](CHANGES.md).
 
-Version 1.8.3 fixes the Cancel button layout and enables experimental texture relinking by default when a PSD is attached. See CHANGES-1.8.3.md.
+Version 1.8.3 fixes the Cancel button layout and enables experimental texture relinking by default when a PSD is attached. See [CHANGES.md](CHANGES.md).
 
-Version 1.8.2 updates physics group recovery. See CHANGES-1.8.2.md.
+Version 1.8.2 updates physics group recovery. See [CHANGES.md](CHANGES.md).
 
-Version 1.8.1 adds sequential import of multiple PSD files. See CHANGES-1.8.1.md.
+Version 1.8.1 adds sequential import of multiple PSD files. See [CHANGES.md](CHANGES.md).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -24,7 +24,7 @@ Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the 
 
 Conversion reads the selected MOC3, its runtime companions and any selected PSD. The original editor project is never an input. Each mesh with a supported atlas page gets a cropped, triangle-masked source image unless it already has a verified PSD source link. The recovery ZIP includes individual PNGs and their mesh IDs and atlas bounds under `editor-import/atlas-artwork/`. Crops follow the atlas orientation. PNG extraction currently supports non-interlaced indexed (1/2/4/8-bit), RGB (8-bit) and RGBA (8-bit) pages. Missing or unsupported pages are reported.
 
-Version 1.8 recovers editable warp and ArtMesh blend shapes and their native weight constraints. For Cubism 5.0-compatible runtime exports, it also restores rotation deformer, part and glue blend targets. Output.recovery.txt lists counts for each type. See CHANGES-1.8.md for details.
+Version 1.8 recovers editable warp and ArtMesh blend shapes and their native weight constraints. For Cubism 5.0-compatible runtime exports, it also restores rotation deformer, part and glue blend targets. Output.recovery.txt lists counts for each type. See [CHANGES.md](CHANGES.md) for details.
 
 ## Run
 
@@ -90,7 +90,7 @@ Copy-Item engine/target/release/moc-recover.exe engine/moc-recover.exe -Force
 dotnet publish Gui/MocRecovery.csproj -c Release -r win-x64 --self-contained true -o ../publish
 ```
 
-For each release, document the user-visible changes in `source/CHANGES-<version>.md` and place the same entry at the top of `source/CHANGES.md`. Keep previous entries below it. Publishing validates the entry and copies both files alongside the executable. Include those published copies in the Windows ZIP.
+Add each release at the top of [CHANGES.md](CHANGES.md). Publishing checks the first version heading and includes this file beside the executable.
 
 The C# test console takes a folder containing the Example runtime export, the native engine path and an EMPTY test output directory. The test program includes a Linux-specific failing-process fixture (`/bin/false`); replace it with a suitable failing executable to run that check on Windows.
 
@@ -112,7 +112,7 @@ The .NET runtime and third-party dependencies retain their own licenses. See the
 
 Keep the original runtime companion files alongside the MOC3. The new importer does not copy rig data from an original CMO3 and requires no original project at runtime. No Example IDs or settings are hard-coded into the importer.
 
-See CHANGES-1.1.0_CHANGES-1.4.4.md for remaining differences. Neither Windows GUI execution nor a Cubism Editor open/re-export test has been performed in this environment. Numeric/static matches do not establish complete animated equivalence. Deformer keyform coordinates, interpolation behavior, editor extensions and layer layouts have not all been proven equivalent.
+See [CHANGES.md](CHANGES.md) for remaining differences. Neither Windows GUI execution nor a Cubism Editor open/re-export test has been performed in this environment. Numeric/static matches do not establish complete animated equivalence. Deformer keyform coordinates, interpolation behavior, editor extensions and layer layouts have not all been proven equivalent.
 
 ## Version 1.1.1 output location
 
@@ -195,19 +195,19 @@ If recovery fails, the on-screen report now includes the full exception details;
 
 ## Version 1.5.0 — Validation and companion import improvements
 
-Read CHANGES-1.5.0.md for the detailed changes, tests, output filenames and limits. Validation now covers warp/rotation forms and hierarchy, bounded simultaneous parameter samples and source-to-editor physics fields. Companion exports add isolated expression fade previews, complete pose-group snapshots and filtered editor motion copies. Originals remain preserved. The validation folder also contains a paired-parameter review motion and schedule when applicable. These additions do not establish rendered/runtime equivalence.
+Read [CHANGES.md](CHANGES.md) for the detailed changes, tests, output filenames and limits. Validation now covers warp/rotation forms and hierarchy, bounded simultaneous parameter samples and source-to-editor physics fields. Companion exports add isolated expression fade previews, complete pose-group snapshots and filtered editor motion copies. Originals remain preserved. The validation folder also contains a paired-parameter review motion and schedule when applicable. These additions do not establish rendered/runtime equivalence.
 
 ## Version 1.5.1 — Optional PSD artwork matching
 
 The new checkbox is checked automatically whenever a PSD is selected and disabled without a PSD. It compares PSD layers with atlas artwork inside recovered mesh UV triangles, considering color, transparency, shape/aspect and quarter-turn rotation. Strong, distinct candidates restore mesh display names and record inferred layer associations. IDs, mesh geometry, original source pixels and atlas texture links are unchanged. Identical/weak candidates are reported without forced assignment. This does not reconnect PSD textures or recover original placement transforms.
 
-See CHANGES-1.5.1.md. Matching details are exported to editor-import/psd-source/artwork-matches.json in the recovery ZIP. The existing layers.json Match field explicitly describes the separate name-only check. PSD layers are still imported when matching is unchecked.
+See [CHANGES.md](CHANGES.md). Matching details are exported to editor-import/psd-source/artwork-matches.json in the recovery ZIP. The existing layers.json Match field explicitly describes the separate name-only check. PSD layers are still imported when matching is unchecked.
 
 ## Version 1.6.0 — Experimental PSD texture-source relinking
 
 The new checkbox attempts to restore source-image references for strong, unambiguous artwork matches. It fits a scale/quarter-turn/translation, checks held-out full-resolution PNG samples, and verifies the existing atlas-to-canvas fit. Accepted source references and optional alignment transforms are written into the CMO3. Active atlas texture inputs, UVs, texture state, rig geometry and IDs remain unchanged, following the atlas-backed structure of the supplied original project.
 
-This is source relinking, not an immediate switch to PSD rendering or an atlas rebuild. A source link passing these sampled checks is not proof of identical Cubism behavior; check placement in Cubism before updating source images or rebuilding the atlas. Original authoring transforms, layer identifiers and future PSD reimport behavior are not guaranteed. Results and skip reasons appear on screen and in editor-import/psd-source/texture-relinks.json. Read CHANGES-1.6.0.md for details and test scope.
+This is source relinking, not an immediate switch to PSD rendering or an atlas rebuild. A source link passing these sampled checks is not proof of identical Cubism behavior; check placement in Cubism before updating source images or rebuilding the atlas. Original authoring transforms, layer identifiers and future PSD reimport behavior are not guaranteed. Results and skip reasons appear on screen and in editor-import/psd-source/texture-relinks.json. Read [CHANGES.md](CHANGES.md) for details and test scope.
 
 ## Version 1.6.1 — Percentage progress
 

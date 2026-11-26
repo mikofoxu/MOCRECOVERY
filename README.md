@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.7.2
+# MOC3 Recovery for Windows — 1.7.3
 
-Version 1.7.2 (includes the responsible-use notice and PSD limitations).
+Version 1.7.3 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -8,7 +8,7 @@ Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the 
 
 Conversion reads the selected MOC3, its runtime companions and any selected PSD. The original editor project is never an input. Each mesh with a supported atlas page gets a cropped, triangle-masked source image unless it already has a verified PSD source link. The recovery ZIP includes individual PNGs and their mesh IDs and atlas bounds under `editor-import/atlas-artwork/`. Crops follow the atlas orientation. PNG extraction currently supports non-interlaced 8-bit RGB and RGBA pages. Missing or unsupported pages are reported.
 
-Cubism 4.2+ blend-shape parameter types are restored. Unconstrained warp position targets with one ordinary editing base are reconstructed from the runtime offsets and key values. The report identifies skipped constrained bindings, multi-base warps and other target types. This release focuses on warp geometry and opacity. Blend-shape color animation, hand-authored deformation paths and hidden objects omitted from the runtime require additional data.
+Version 1.7.3 recovers editable warp and ArtMesh blend shapes from the MOC3, including native weight constraints and objects with multiple ordinary keyforms. The recovery report lists totals by object type and identifies unsupported target types. See CHANGES-1.7.3.md for details.
 
 ## Run
 

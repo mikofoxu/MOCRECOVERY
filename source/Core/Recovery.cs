@@ -196,7 +196,7 @@ public static class Recovery
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.7.2").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.7.3").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");

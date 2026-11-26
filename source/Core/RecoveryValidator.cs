@@ -43,7 +43,10 @@ public static class RecoveryValidator
                 int flags=mesh.GetProperty("drawable_flags").GetInt32();
                 Check(source.Descendants("b").Single(e=>Name(e)=="invertClippingMask").Value==((flags&8)!=0?"true":"false"),id+": inverted clipping flag differs.");
                 Check(source.Elements("b").Single(e=>Name(e)=="culling").Value==((flags&4)==0?"true":"false"),id+": culling flag differs.");
-                var forms=mesh.GetProperty("keyforms").EnumerateArray().ToArray();var editorForms=source.Descendants("CArtMeshForm").ToArray();
+                var forms=mesh.GetProperty("keyforms").EnumerateArray().ToArray();var morphIds=source.Descendants("KeyFormMorphTarget").Select(e=>(string)e.Element("CFormGuid")!.Attribute("xs.ref")!).ToHashSet();
+                var allForms=source.Elements().Single(e=>Name(e)=="keyforms").Elements("CArtMeshForm").ToArray();
+                var editorForms=allForms.Where(e=>!morphIds.Contains((string)e.Descendants("CFormGuid").Single().Attribute("xs.ref")!)).ToArray();
+                Check(allForms.Length==editorForms.Length+morphIds.Count,id+": missing or duplicate mesh morph forms.");
                 Check(forms.Length==editorForms.Length,id+": keyform count differs.");
                 var pointSets=new List<double[]>();var editorSets=new List<double[]>();bool isCanvas=mesh.GetProperty("parent_deformer_index").ValueKind==JsonValueKind.Null;
                 for(int f=0;f<Math.Min(forms.Length,editorForms.Length);f++)

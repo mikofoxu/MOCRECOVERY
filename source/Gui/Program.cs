@@ -46,7 +46,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.7.2";
+        Text="MOC3 Recovery 1.7.3";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;

@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Xml.Linq;
 namespace MocRecovery;
 public sealed record PsdImportResult(int Layers,int Imported,int NameMatches,List<string> Notes)
-{public int ArtworkMatches {get;init;} public int RelinkedTextures {get;init;}}
+{internal List<RelinkResult> AcceptedLinks {get;init;} = []; public int ArtworkMatches {get;init;} public int RelinkedTextures {get;init;}}
 public static class PsdImporter
 {
     static string? N(XElement e)=>(string?)e.Attribute("xs.n");
@@ -85,6 +85,7 @@ public static class PsdImporter
             {notes.Add($"PSD LAYER NOT IMPORTED: {l.Name}: {e.Message}");inventory.Add(new{l.Index,l.Name,Error=e.Message});}
             progress?.Invoke(++completedLayers*65/Math.Max(1,totalLayers));
         }
+        List<RelinkResult> acceptedLinks = [];
         int artworkMatches=0,relinkedTextures=0;
         if(matchArtwork)
         {
@@ -110,7 +111,8 @@ public static class PsdImporter
                 int started=0,total=results.Count(r=>r.Status.StartsWith("Accepted"));
                 void LinkUpdate(string message){update?.Invoke(message);progress?.Invoke(78+(started++)*18/Math.Max(1,total));}
                 var relinks=PsdTextureRelinker.Apply(doc,model.RootElement,results,modelImages,entries,psd.Layers,textures??Array.Empty<string>(),LinkUpdate,prefix);
-                relinkedTextures=relinks.Count(r=>r.Status.StartsWith("Relinked"));
+                acceptedLinks=relinks.Where(r=>r.SourceToAtlas!=null).ToList();
+                relinkedTextures=acceptedLinks.Count;
                 foreach(var group in relinks.Where(r=>r.Status.StartsWith("Relinked")).GroupBy(r=>r.LayerIndex!.Value))Field(modelImages[group.Key],"memo").Value="PSD source raster. Experimental source links: "+string.Join(", ",group.Select(r=>r.MeshId))+". Active atlas retained; alignment inferred.";
                 foreach(var r in relinks)notes.Add($"PSD TEXTURE RELINK: {r.MeshId}: {r.Status}");
                 File.WriteAllText(Path.Combine(exportDirectory,"texture-relinks.json"),JsonSerializer.Serialize(new{experimental=true,scope="PSD source-image references and alignment transforms restored for accepted cases. Active atlas inputs, UVs and geometry retained, matching atlas-backed Editor project structure. This does not prove Cubism rendering equivalence.",maximumPixelRmse=0.035,maximumAlphaError=0.035,minimumVisibleValidationSamples=64,maximumCanvasFitError=1,results=relinks},new JsonSerializerOptions{WriteIndented=true}));
@@ -125,6 +127,6 @@ public static class PsdImporter
         File.WriteAllText(Path.Combine(exportDirectory,"README.txt"),"PSD SOURCE ARTWORK\nOriginal layer rasters are embedded as source images in the CMO3 and exported as numbered PNGs here. layers.json contains original names, positions, visibility, group membership and matching candidates. Original PSD is preserved in the recovery ZIP.\n\nRig texture links stay on the recovered atlas. Unique name matches restore display labels only; they are not proof of correspondence. Unmatched artwork is available but no missing mesh or rig is invented. Masks/effects, non-normal blends and smart objects have limitations noted per layer. Raw PNG alpha excludes layer opacity and visibility, which remain metadata. When artwork matching is enabled, artwork-matches.json records accepted, ambiguous and rejected candidates. Accepted matches update display names and source-image memos only. When experimental texture relinking is selected, accepted PSD source-image links and inferred alignment transforms are restored; texture-relinks.json records results and skips. The active atlas remains in use, as in an atlas-backed original Editor project. Original placement transforms are not guaranteed. PSD groups remain source-image groups, not rig parts/deformers.\n");
         progress?.Invoke(97);
         progress?.Invoke(100);
-        return new(psd.Layers.Count(l=>l.Section==0),imported,matches,notes){ArtworkMatches=artworkMatches,RelinkedTextures=relinkedTextures};
+        return new(psd.Layers.Count(l=>l.Section==0),imported,matches,notes){AcceptedLinks=acceptedLinks,ArtworkMatches=artworkMatches,RelinkedTextures=relinkedTextures};
     }
 }

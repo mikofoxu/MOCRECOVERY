@@ -1,3 +1,9 @@
+# MocRecovery 2.0
+
+- Added an Artwork tab with one row per ArtMesh. It shows the artwork source and image dimensions, and explains skipped crops, including meshes with no triangles or no covered atlas pixels.
+- The table reports placement error from the saved transforms in atlas pixels. For atlas crops, it also compares visible pixels and partially transparent edges with the source atlas.
+- Added placement.json to the recovery ZIP alongside artwork.json.
+
 # MocRecovery 1.93
 
 - Added a Physics tab after Texture accuracy with per-group inputs, outputs, normalization ranges, particles and import notes.

@@ -31,6 +31,7 @@ public sealed class Plan
     public bool InferParameterLinks { get; set; } = true;
     public List<string> Notes { get; } = [];
     public string? DisplayInfo { get; set; }
+    public IReadOnlyList<ArtworkRow> Artwork { get; internal set; } = [];
     public PhysicsReport? AppliedPhysics { get; internal set; }
     public string? PhysicsInfo { get; set; }
     public string[] Outputs => [Output, Report, Backup, TextureReport];
@@ -211,7 +212,10 @@ public static class Recovery
                 ? DeformerNames.NameFromArtMeshes(projectXml)
                 : ["Deformer name guesses disabled. Existing display labels retained."];
             var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
-            supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,out int skippedCrops,cancellationToken));
+            var artworkRows = new List<ArtworkRow>();
+            var artworkLinks = psdResults.SelectMany(r => r.AcceptedLinks).GroupBy(r => r.MeshId).ToDictionary(g => g.Key,g => g.Last());
+            supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,out int skippedCrops,artworkRows,artworkLinks,cancellationToken));
+            plan.Artwork=artworkRows;
             var textureReport = Path.Combine(temp,"texture-accuracy.txt");
             plan.TextureMeasurements = TextureAccuracy.Apply(projectXml,recovered.RootElement,plan.Textures);
             File.WriteAllText(textureReport,plan.TextureMeasurements.ToReportText());
@@ -227,7 +231,7 @@ public static class Recovery
             plan.WarningCount = warningCount;
             plan.CompletionSummary = $"Engine and validation warnings: {warningCount}   ·   Atlas mesh crops skipped: {skippedCrops}";
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.93").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v2.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             if (warningCount > 0)
             {
                 report.AppendLine(Plan.WarningHeading);

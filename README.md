@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.93
+# MOC3 Recovery for Windows — 2.0
 
-Version 1.93 updates the Texture accuracy tab with aligned columns and more row spacing. See [CHANGES.md](CHANGES.md).
+Version 2.0 adds an Artwork tab for reviewing each mesh’s source artwork and placement. See [CHANGES.md](CHANGES.md).
 
 Version 1.91 preserves each warp deformer’s transform mode. See [CHANGES.md](CHANGES.md).
 

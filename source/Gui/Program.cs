@@ -39,6 +39,9 @@ public sealed class MainWindow : Form
     private readonly Button removePsd = new() { Text = "Remove selected", Enabled = false };
     private readonly TabControl tabs = new() { Dock = DockStyle.Fill };
     private readonly TabPage texturePage = new("Texture accuracy") { Padding = new Padding(12) };
+    private readonly TabPage artworkPage = new("Artwork") { Padding = new Padding(12) };
+    private readonly DataGridView artworkGrid = CreateReportGrid("Editable artwork by ArtMesh");
+    private readonly Label artworkSummary = new() { AutoSize = true, Dock = DockStyle.Fill };
     private readonly TabPage physicsPage = new("Physics") { Padding = new Padding(12) };
     private readonly Label physicsSummary = new() { AutoSize = true, Dock = DockStyle.Fill };
     private readonly DataGridView physicsGrid = CreateReportGrid("Applied physics");
@@ -77,7 +80,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.93";
+        Text="MOC3 Recovery 2.0";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -196,6 +199,10 @@ public sealed class MainWindow : Form
         BuildReportPage(texturePage, textureGrid, textureSummary, "Texture mapping accuracy", TextureReportData.Explanation,
             ["ArtMesh", "Before (%)", "Vertices in tolerance after", "After (%)", "Worst before (px)", "Worst after (px)", "Reason"],
             ["Before (%)", "Vertices in tolerance after", "After (%)", "Worst before (px)", "Worst after (px)"]);
+        BuildReportPage(artworkPage, artworkGrid, artworkSummary, "Editable artwork placement",
+            "Offset is the largest corner displacement in atlas pixels against the crop origin or fitted PSD alignment. Pixel checks compare the embedded crop with its source atlas before a Cubism atlas rebuild.",
+            ["ArtMesh", "Page", "Outcome", "Source image", "Crop X", "Crop Y", "Width", "Height", "Max offset (px)", "Details"],
+            ["Page", "Crop X", "Crop Y", "Width", "Height", "Max offset (px)"]);
         BuildReportPage(physicsPage, physicsGrid, physicsSummary, "Applied physics",
             "Inputs drive each group. Outputs show the parameter and particle they use.",
             ["Group", "Group ID", "Item", "Parameter", "Axis", "Weight (%)", "Scale", "Vertex", "Reflect", "Details"],
@@ -295,6 +302,9 @@ public sealed class MainWindow : Form
 
     private void ResetReportTab()
     {
+        tabs.TabPages.Remove(artworkPage);
+        artworkGrid.Rows.Clear();
+        artworkSummary.Text = "";
         tabs.TabPages.Remove(physicsPage);
         physicsGrid.Rows.Clear();
         physicsSummary.Text = "";
@@ -328,6 +338,15 @@ public sealed class MainWindow : Form
             textureGrid.Rows.Add(row.Id, row.Before, row.WithinTolerance, row.After, row.WorstBefore, row.WorstAfter, row.Reason ?? string.Empty);
         textureGrid.ClearSelection();
         tabs.TabPages.Add(texturePage);
+        var artwork = completed.Artwork;
+        artworkSummary.Text = $"{artwork.Count} ArtMeshes   ·   " + string.Join("   ·   ",
+            artwork.GroupBy(r => r.Outcome).Select(g => $"{g.Key}: {g.Count()}"));
+        foreach (var r in artwork)
+            artworkGrid.Rows.Add(r.Mesh,r.Page,r.Outcome,r.Source ?? "—",r.X?.ToString() ?? "—",
+                r.Y?.ToString() ?? "—",r.Width?.ToString() ?? "—",r.Height?.ToString() ?? "—",
+                r.MaxOffset?.ToString("F4") ?? "—",r.Detail ?? "");
+        artworkGrid.ClearSelection();
+        tabs.TabPages.Add(artworkPage);
         var physics = completed.AppliedPhysics!;
         physicsSummary.Text = physics.Summary;
         foreach (var row in physics.Rows)

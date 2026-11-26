@@ -55,7 +55,7 @@ internal static class RuntimeArtwork
         return(png,left,top,w,bottom-top);
     }
 
-    internal static List<string> Apply(XDocument doc,Dictionary<string,byte[]> entries,JsonElement model,IReadOnlyList<string> pages,string folder,Action<string> stage,out int skippedCrops,CancellationToken token=default)
+    internal static List<string> Apply(XDocument doc,Dictionary<string,byte[]> entries,JsonElement model,IReadOnlyList<string> pages,string folder,Action<string> stage,out int skippedCrops,List<ArtworkRow> rows,IReadOnlyDictionary<string,RelinkResult> links,CancellationToken token=default)
     {
         skippedCrops = 0;
         Directory.CreateDirectory(folder);
@@ -70,21 +70,60 @@ internal static class RuntimeArtwork
         foreach(var group in model.GetProperty("art_meshes").EnumerateArray().GroupBy(m=>m.GetProperty("texture_index").GetInt32()))
         {
             int page=group.Key;
-            if(page>=pages.Count||!File.Exists(pages[page])){skippedCrops += group.Count();notes.Add($"Atlas page {page} missing; skipped {group.Count()} mesh crops.");continue;}
+            void Unavailable(string outcome,string detail)
+            {
+                foreach (var mesh in group)
+                    rows.Add(new(mesh.GetProperty("id").GetString()!,page,outcome,Detail:detail));
+            }
+            if((uint)page>=pages.Count || !File.Exists(pages[page]))
+            {
+                skippedCrops += group.Count();
+                Unavailable("Atlas file missing","No PNG available for this page.");
+                notes.Add($"Atlas page {page} missing; skipped {group.Count()} mesh crops.");
+                continue;
+            }
             using var raw=new FileStream(Path.Combine(folder,Guid.NewGuid()+".tmp"),FileMode.CreateNew,FileAccess.ReadWrite,FileShare.None,65536,FileOptions.DeleteOnClose);
-            byte[] png=File.ReadAllBytes(pages[page]);int width,height;
-            try{(width,height)=PngRows.Size(png);PngRows.Read(png,(_,row)=>{token.ThrowIfCancellationRequested();raw.Write(row); });}
-            catch(InvalidDataException e){skippedCrops += group.Count();notes.Add($"Atlas page {page} skipped: {e.Message}");continue;}
+            int width,height;
+            try
+            {
+                byte[] png=File.ReadAllBytes(pages[page]);
+                (width,height)=PngRows.Size(png);
+                PngRows.Read(png,(_,row)=>{token.ThrowIfCancellationRequested();raw.Write(row);});
+            }
+            catch(Exception e) when(e is InvalidDataException or IOException or UnauthorizedAccessException)
+            {
+                skippedCrops += group.Count(); Unavailable("Atlas unreadable",e.Message);
+                notes.Add($"Atlas page {page} skipped: {e.Message}"); continue;
+            }
             foreach(var mesh in group)
             {
                 string id=mesh.GetProperty("id").GetString()!;
                 var source=sources[id];var ext=objects[Ref(source.Descendants("CTextureInputExtension").Single(e=>e.Attribute("xs.ref")!=null))];
                 var inputs=F(ext,"_textureInputs");var input=objects[Ref(inputs.Elements("CTextureInput_ModelImage").Single())];
                 var sourceGuid=F(input,"_modelImageGuid");string previous=Ref(sourceGuid);
-                if(!atlasImages.Contains(previous)){psd++;inventory.Add(new{id,page,source="existing source image"});continue;}
+                var atlas=objects[Ref(inputs.Elements("CTextureInput_TextureAtlasRegion").Single())];
+                if(!atlasImages.Contains(previous))
+                {
+                    var linked = images[previous];
+                    var layerSource = objects[Ref(linked.Descendants("CLayer").Single())];
+                    var resourceSource = objects[Ref(F(layerSource,"imageResource"))];
+                    string sourceFile = (string)F(resourceSource,"imageFileBuf").Attribute("path")!;
+                    var size = PngRows.Size(entries[sourceFile]);
+                    bool fitted = links.TryGetValue(id,out var link) && link.SourceToAtlas!=null;
+                    var row = new ArtworkRow(id,page,fitted ? "PSD linked" : "Existing image retained",
+                        F(linked,"name").Value+" ("+sourceFile+")",Width:size.Width,Height:size.Height,
+                        Detail:fitted ? $"Against fitted PSD alignment. Sampled RGBA RMSE {link!.PixelRmse:F4}." : "No independent alignment available.");
+                    rows.Add(fitted ? ArtworkPlacement.Measure(row,linked,input,atlas,link!.SourceToAtlas!) : row);
+                    psd++;inventory.Add(new{id,page,source="existing source image"});continue;
+                }
                 stage("Extracting atlas artwork: "+id);
                 var crop=Crop(mesh,raw,width,height,token);
-                if(crop==null){skippedCrops++;notes.Add($"Atlas crop skipped for {id}: no covered texels.");continue;}
+                if(crop==null)
+                {
+                    string reason=mesh.GetProperty("triangle_indices").GetArrayLength()==0 ? "No triangles" : "No covered pixels";
+                    rows.Add(new(id,page,reason,Path.GetFileName(pages[page]),Detail:"No editable crop created."));
+                    skippedCrops++;notes.Add($"Atlas crop skipped for {id}: {reason}.");continue;
+                }
                 var (data,x,y,w,h)=crop.Value;string file=$"atlas-mesh-{created:D4}.png";
                 var template=images[previous];var layerTemplate=objects[Ref(template.Descendants("CLayer").Single())];
                 var layer=new XElement(layerTemplate);var resource=new XElement(objects[Ref(F(layer,"imageResource"))]);
@@ -105,17 +144,22 @@ internal static class RuntimeArtwork
                 foreach(var size in image.Descendants("CSize")){size.SetAttributeValue("width",w);size.SetAttributeValue("height",h);}
                 var material=F(image,"_materialLocalToCanvasTransform");material.SetAttributeValue("m02",x);material.SetAttributeValue("m12",y);
                 Append(template.Parent!,image);
-                var atlas=objects[Ref(inputs.Elements("CTextureInput_TextureAtlasRegion").Single())];
                 string[] keys=["m00","m01","m02","m10","m11","m12"];
                 double[] Matrix(XElement m)=>keys.Select(k=>double.Parse((string)m.Attribute(k)!,CultureInfo.InvariantCulture)).ToArray();
                 var placement=PsdTextureRelinker.Multiply(Matrix(F(atlas,"optionalTransformOnCanvas")),Matrix(F(atlas,"inputImageLocalToCanvasTransform")));
                 var transform=F(input,"optionalTransformOnCanvas");for(int k=0;k<6;k++)transform.SetAttributeValue(keys[k],placement[k]);
                 sourceGuid.SetAttributeValue("xs.ref",guid);
                 entries.Add(file,data);File.WriteAllBytes(Path.Combine(folder,file),data);
+                var pixels=ArtworkPlacement.CheckPixels(data,raw,width,x,y,token);
+                string detail=$"{pixels.Mismatches:N0} mismatches / {pixels.Visible:N0} nontransparent crop pixels; "+
+                    $"{pixels.EdgeMismatches:N0} / {pixels.Edge:N0} translucent pixels differ.";
+                var cropRow=new ArtworkRow(id,page,"Atlas crop created",file,x,y,w,h,Detail:detail);
+                rows.Add(ArtworkPlacement.Measure(cropRow,image,input,atlas,[1,0,x,0,1,y]));
                 inventory.Add(new{id,page,file,x,y,width=w,height=h});created++;
             }
         }
         File.WriteAllText(Path.Combine(folder,"artwork.json"),JsonSerializer.Serialize(inventory,new JsonSerializerOptions{WriteIndented=true}));
+        File.WriteAllText(Path.Combine(folder,"placement.json"),JsonSerializer.Serialize(rows,new JsonSerializerOptions{WriteIndented=true}));
         notes.Add($"Individual ArtMesh atlas source images embedded and exported: {created}; existing PSD source links retained: {psd}.");
         return notes;
     }

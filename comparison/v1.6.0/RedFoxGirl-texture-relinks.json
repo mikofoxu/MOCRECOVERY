@@ -1,0 +1,502 @@
+{
+  "experimental": true,
+  "scope": "PSD source-image references and alignment transforms restored for accepted cases. Active atlas inputs, UVs and geometry retained, matching atlas-backed Editor project structure. This does not prove Cubism rendering equivalence.",
+  "maximumPixelRmse": 0.035,
+  "maximumAlphaError": 0.035,
+  "minimumVisibleValidationSamples": 64,
+  "maximumCanvasFitError": 1,
+  "results": [
+    {
+      "MeshId": "fronthair",
+      "LayerIndex": 27,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "fronthair2",
+      "LayerIndex": 27,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "pupilrighthighlight",
+      "LayerIndex": 17,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "pupillefthighlight",
+      "LayerIndex": 13,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "body",
+      "LayerIndex": 21,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "back",
+      "LayerIndex": 29,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "tongue",
+      "LayerIndex": 3,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "lowerteeth",
+      "LayerIndex": 19,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "upperteeth",
+      "LayerIndex": 6,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "closedmouth2",
+      "LayerIndex": 31,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "openmouthouter",
+      "LayerIndex": 24,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "hearteyeright",
+      "LayerIndex": 31,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "hearteyeleft",
+      "LayerIndex": 31,
+      "Status": "Not relinked: no unique accepted artwork match.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "sleep",
+      "LayerIndex": 34,
+      "Status": "Not relinked: PSD opacity, masks, blending or effects require manual review.",
+      "PixelRmse": null,
+      "AlphaError": null,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "ArtMesh",
+      "LayerIndex": 33,
+      "Status": "Relinked PSD source image; active atlas retained.",
+      "PixelRmse": 0.03425686823911051,
+      "AlphaError": 0.015321625620244255,
+      "GeometryError": 0.0011747355951117094,
+      "SourceToAtlas": [
+        0.6233867459396751,
+        0,
+        7688.03125,
+        0,
+        0.6197915983946798,
+        3986.156280517578
+      ],
+      "OptionalTransform": [
+        1.0051396877066414,
+        0,
+        -16.595244298176567,
+        0,
+        0.99934100294029,
+        1.3375409006600876
+      ]
+    },
+    {
+      "MeshId": "eyebrowright",
+      "LayerIndex": 29,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.053870030438497474,
+      "AlphaError": 0.0299481021259323,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "eyebrowleft",
+      "LayerIndex": 28,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.06602610241106112,
+      "AlphaError": 0.03377545242755515,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "fronthairshadow",
+      "LayerIndex": 26,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.22797702302498474,
+      "AlphaError": 0.11331799144735963,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "depressed",
+      "LayerIndex": 24,
+      "Status": "Relinked PSD source image; active atlas retained.",
+      "PixelRmse": 0.0020987688284918654,
+      "AlphaError": 0.002377514223583515,
+      "GeometryError": 0.0008314167002165463,
+      "SourceToAtlas": [
+        0.6193939190227412,
+        0,
+        2167.278289794922,
+        0,
+        0.622129782614007,
+        3822.953929096187
+      ],
+      "OptionalTransform": [
+        0.9987339823042313,
+        0,
+        4.382324913204229,
+        0,
+        1.0031449558628251,
+        -7.385646235859895
+      ]
+    },
+    {
+      "MeshId": "eyeright",
+      "LayerIndex": 23,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.04896312466267777,
+      "AlphaError": 0.013058051888450783,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "eyeleft",
+      "LayerIndex": 22,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.06696926048786782,
+      "AlphaError": 0.023403753789570454,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "nose",
+      "LayerIndex": 21,
+      "Status": "Relinked PSD source image; active atlas retained.",
+      "PixelRmse": 0.02468551071401102,
+      "AlphaError": 0.005539657148300405,
+      "GeometryError": 0.0009751891280926566,
+      "SourceToAtlas": [
+        0.6205240885416666,
+        0,
+        3422.1796875,
+        0,
+        0.6177286255411255,
+        1834.6953125
+      ],
+      "OptionalTransform": [
+        1.000557426961263,
+        0,
+        -2.1630026660809563,
+        0,
+        0.996049850784632,
+        10.727818247267805
+      ]
+    },
+    {
+      "MeshId": "blush",
+      "LayerIndex": 19,
+      "Status": "Relinked PSD source image; active atlas retained.",
+      "PixelRmse": 0.0019857916417808934,
+      "AlphaError": 0.0018478470246052702,
+      "GeometryError": 0.0011598552921755774,
+      "SourceToAtlas": [
+        0.6203307291321025,
+        0,
+        2671.0772767147773,
+        0,
+        0.62290052613321,
+        4387.298158065132
+      ],
+      "OptionalTransform": [
+        1.0002443439557258,
+        0,
+        -0.8218763350841982,
+        0,
+        1.0043876687864968,
+        -12.371621383955699
+      ]
+    },
+    {
+      "MeshId": "face",
+      "LayerIndex": 18,
+      "Status": "Relinked PSD source image; active atlas retained.",
+      "PixelRmse": 0.03032714633578619,
+      "AlphaError": 0.003520915101539821,
+      "GeometryError": 0.0023272099549931273,
+      "SourceToAtlas": [
+        0.6199215601660744,
+        0,
+        6775.761945724487,
+        0,
+        0.6216650488471654,
+        2056.2072582244873
+      ],
+      "OptionalTransform": [
+        0.9995512329138795,
+        0,
+        2.663843245105454,
+        0,
+        1.002362156455339,
+        -6.76114679252737
+      ]
+    },
+    {
+      "MeshId": "pupilright",
+      "LayerIndex": 16,
+      "Status": "Relinked PSD source image; active atlas retained.",
+      "PixelRmse": 0.02674198730610839,
+      "AlphaError": 0.007818223110358869,
+      "GeometryError": 0.001728584130081392,
+      "SourceToAtlas": [
+        0.6169507575757576,
+        0,
+        3422.40625,
+        0,
+        0.6226041666666667,
+        990.75
+      ],
+      "OptionalTransform": [
+        0.9947965114109849,
+        0,
+        22.020914055966387,
+        0,
+        1.0039091853020834,
+        -9.827841467583312
+      ]
+    },
+    {
+      "MeshId": "eyerightback",
+      "LayerIndex": 15,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.06867362795280012,
+      "AlphaError": 0.011341815737436705,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "pupilleft",
+      "LayerIndex": 12,
+      "Status": "Relinked PSD source image; active atlas retained.",
+      "PixelRmse": 0.022685537751837584,
+      "AlphaError": 0.005688868217473758,
+      "GeometryError": 0.001447497681994875,
+      "SourceToAtlas": [
+        0.6196563852813853,
+        0,
+        3422.28125,
+        0,
+        0.6201041666666667,
+        1253.875
+      ],
+      "OptionalTransform": [
+        0.9991566970170455,
+        0,
+        3.0842019698861804,
+        0,
+        0.9998774759479168,
+        0.08780680266636409
+      ]
+    },
+    {
+      "MeshId": "eyeleftback",
+      "LayerIndex": 11,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.08331438977957695,
+      "AlphaError": 0.01677619148587699,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "faceback",
+      "LayerIndex": 10,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.05096841970632299,
+      "AlphaError": 0.008498278581481014,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "neck",
+      "LayerIndex": 9,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.035420760998209774,
+      "AlphaError": 0.005686617576257026,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "boobs",
+      "LayerIndex": 8,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.06378355676090051,
+      "AlphaError": 0.00774791274030561,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "string",
+      "LayerIndex": 7,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.061899862732400994,
+      "AlphaError": 0.0204100630634667,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "legleft",
+      "LayerIndex": 6,
+      "Status": "Relinked PSD source image; active atlas retained.",
+      "PixelRmse": 0.029484818875565217,
+      "AlphaError": 0.0025448009501234554,
+      "GeometryError": 0.011166929328192438,
+      "SourceToAtlas": [
+        0.6203055929795122,
+        0,
+        5700.409537792206,
+        0,
+        0.6203448425615031,
+        159.17486119270325
+      ],
+      "OptionalTransform": [
+        1.000170068863966,
+        0,
+        0.28884088001632335,
+        0,
+        1.0002338504907498,
+        -1.4075325248040826
+      ]
+    },
+    {
+      "MeshId": "legright",
+      "LayerIndex": 5,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.05355442914574175,
+      "AlphaError": 0.006323383890417412,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "backhair",
+      "LayerIndex": 3,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.046564833941688415,
+      "AlphaError": 0.009502147564506494,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "tail",
+      "LayerIndex": 2,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.10412765459086837,
+      "AlphaError": 0.0250294754758482,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "earleft",
+      "LayerIndex": 32,
+      "Status": "Not relinked: atlas-to-canvas fit exceeds one canvas pixel.",
+      "PixelRmse": 0.01665500376723267,
+      "AlphaError": 0.0036751233251693135,
+      "GeometryError": 86.15850310818756,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    },
+    {
+      "MeshId": "earright",
+      "LayerIndex": 31,
+      "Status": "Not relinked: held-out pixel alignment check failed.",
+      "PixelRmse": 0.10673080264659965,
+      "AlphaError": 0.02900731045397267,
+      "GeometryError": null,
+      "SourceToAtlas": null,
+      "OptionalTransform": null
+    }
+  ]
+}

@@ -82,3 +82,6 @@ Measured Linux .NET 10 process peak RSS for all-layer PSD extraction: v1.4.3 3,6
 
 ## Version 1.5.1
 PSD artwork matching is checked by default when a PSD is selected. RedFoxGirl: 25 accepted, 3 ambiguous and 10 insufficiently close matches; ArtMesh resolves to mad sign and duplicate hair remains ambiguous. Both checkbox states, matching unit checks and recovery regression checks pass. Enabled PSD recovery peaked at 472,400 KiB RSS in Linux. IDs and atlas links remain unchanged. Windows UI/Cubism visual testing is pending. See CHANGES-1.5.1.md.
+
+## Version 1.6.0
+Experimental PSD source texture relinking restores 8 RedFoxGirl source links; 30 meshes are skipped with reasons. Full-resolution held-out pixel samples and canvas-fit checks gate each write. Geometry, UVs, IDs and active atlas inputs remain unchanged. Enabled/disabled integration, four rotations, transform composition, rejected-candidate non-mutation and recovery regression checks pass. Windows/Cubism visual and source-update testing remains outstanding. See CHANGES-1.6.0.md.

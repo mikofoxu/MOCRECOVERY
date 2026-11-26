@@ -1,9 +1,11 @@
 using System.Text.Json;
 using System.Xml.Linq;
 namespace MocRecovery;
-public sealed record ArtworkDescriptor(double[] Pixels,double Aspect);
+public sealed record ArtworkDescriptor(double[] Pixels,double Aspect)
+{public double[]? Bounds {get;init;}}
 public sealed record ArtworkCandidate(int LayerIndex,string LayerName,ArtworkDescriptor Descriptor);
-public sealed record ArtworkMatch(string MeshId,int? LayerIndex,string? LayerName,double? Score,double? RunnerUpScore,int Rotation,string Status);
+public sealed record ArtworkMatch(string MeshId,int? LayerIndex,string? LayerName,double? Score,double? RunnerUpScore,int Rotation,string Status)
+{public double[]? AtlasBounds {get;init;} public double[]? PsdBounds {get;init;}}
 public static class PsdArtworkMatcher
 {
     const int Preview=128,Size=32;
@@ -36,7 +38,7 @@ public static class PsdArtworkMatcher
                 int x0=Math.Clamp((int)Math.Floor(px),0,Preview-1),y0=Math.Clamp((int)Math.Floor(py),0,Preview-1),x1=Math.Min(x0+1,Preview-1),y1=Math.Min(y0+1,Preview-1);double fx=Math.Clamp(px-x0,0,1),fy=Math.Clamp(py-y0,0,1);
                 for(int k=0;k<4;k++)result[(y*Size+x)*4+k]=(sums[(y0*Preview+x0)*4+k]*(1-fx)+sums[(y0*Preview+x1)*4+k]*fx)*(1-fy)+(sums[(y1*Preview+x0)*4+k]*(1-fx)+sums[(y1*Preview+x1)*4+k]*fx)*fy;
             }
-            return new(result,(maxX-minX+1)*(double)width/((maxY-minY+1)*height));
+            return new(result,(maxX-minX+1)*(double)width/((maxY-minY+1)*height)){Bounds=new[]{left+minX*width/(double)Preview,top+minY*height/(double)Preview,(maxX-minX+1)*width/(double)Preview,(maxY-minY+1)*height/(double)Preview}};
         }
     }
     public static ArtworkDescriptor? Describe(byte[] png)
@@ -63,7 +65,7 @@ public static class PsdArtworkMatcher
         var first=scores[0];double? runner=scores.Count>1?scores[1].Score:null;
         bool close=first.Score<=.025,unique=runner==null||runner-first.Score>=.012&&first.Score<=runner*.65;
         string status=!close?"No sufficiently close artwork match":!unique?"Ambiguous artwork match":"Accepted artwork-name match (inferred)";
-        return new(meshId,first.Candidate.LayerIndex,first.Candidate.LayerName,first.Score,runner,first.Rotation*90,status);
+        return new(meshId,first.Candidate.LayerIndex,first.Candidate.LayerName,first.Score,runner,first.Rotation*90,status){AtlasBounds=mesh.Bounds,PsdBounds=first.Candidate.Descriptor.Bounds};
     }
     public static List<ArtworkMatch> Match(JsonElement model,IReadOnlyList<string> textures,IReadOnlyList<ArtworkCandidate> candidates,List<string> notes)
     {

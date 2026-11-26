@@ -14,6 +14,7 @@ public sealed class Plan
     public List<string> Textures { get; } = [];
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
     public string? PsdInput { get; set; }
+    public bool RelinkPsdTextures { get; set; }
     public bool MatchPsdArtwork { get; set; } = true;
     public bool InferParameterLinks { get; set; } = true;
     public List<string> Notes { get; } = [];
@@ -162,7 +163,7 @@ public static class Recovery
             if(plan.PsdInput!=null)
             {
                 Stage("Importing optional PSD source artwork… Large layers may take a few minutes.");
-                psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"),plan.MatchPsdArtwork,plan.Textures,Stage);
+                psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"),plan.MatchPsdArtwork,plan.Textures,Stage,plan.RelinkPsdTextures);
             }
             Stage("Naming deformers from ArtMeshes…");
             var deformerNames=DeformerNames.NameFromArtMeshes(staged);
@@ -170,7 +171,7 @@ public static class Recovery
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.5.1").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.6.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -191,6 +192,7 @@ public static class Recovery
             else
             {
                 report.AppendLine($"PSD raster layers: {psdResult.Layers}; source images imported: {psdResult.Imported}; unique name candidates: {psdResult.NameMatches}; accepted artwork-name matches: {psdResult.ArtworkMatches}.");
+                report.AppendLine($"Experimental PSD source texture links restored: {psdResult.RelinkedTextures}; option enabled: {plan.RelinkPsdTextures}. Active atlas rendering is retained. See texture-relinks.json when enabled.");
                 report.AppendLine("PSD source images and names are available in the project. Existing mesh texture links remain on the atlas; name-only candidates are not pixel-verified; optional artwork matches are heuristic and reported separately. Unmatched artwork does not recreate omitted mesh geometry or rigging.");
                 foreach(var note in psdResult.Notes)report.AppendLine(note);
             }
@@ -218,7 +220,7 @@ public static class Recovery
             report.AppendLine("Unreferenced expression JSON files in this folder are included; they may belong to another model if models share a folder.");
             report.AppendLine().AppendLine("NOT RECOVERABLE FROM THESE INPUTS / NOT VERIFIED");
             report.AppendLine((psdResult==null?"Original PSD layers were not supplied. ":"Supplied PSD artwork is imported separately; it cannot restore omitted rigging. ")+"Removed mesh geometry, editor-only controls, original GUIDs, deformer labels, authoring history and comments are not fully represented by a MOC3. Exact missing rig object names/counts cannot be determined without the original CMO3.");
-            report.AppendLine("Rig texture links use the recovered atlas pages. Optional PSD source images are imported separately without automatic texture relinking. Advanced/version-specific features may not round-trip exactly.");
+            report.AppendLine("Rig texture links use the recovered atlas pages. Optional PSD source images are imported separately; experimental source relinking results are listed above when enabled. Advanced/version-specific features may not round-trip exactly.");
             report.AppendLine("A valid archive does not prove visual or animated equivalence. Open in Cubism Editor and check the rig before use.");
             Stage("Preserving companion files and writing the report…");
             var zip=Path.Combine(temp,"assets.zip");

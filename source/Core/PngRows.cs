@@ -32,6 +32,19 @@ public static class PngRows
             consume(y,rgba);(row,previous)=(previous,row);
         }
     }
+    public static double[][] Sample(byte[] png,IReadOnlyList<(double X,double Y)> points)
+    {
+        var(width,height)=Size(png);var result=points.Select(_=>new double[4]).ToArray();var rows=new Dictionary<int,List<(int Index,int X,double Weight)>>();
+        for(int i=0;i<points.Count;i++)
+        {
+            var p=points[i];if(!double.IsFinite(p.X)||!double.IsFinite(p.Y)||p.X<-.5||p.Y<-.5||p.X>width+.5||p.Y>height+.5)continue;
+            double x=p.X-.5,y=p.Y-.5;int x0=(int)Math.Floor(x),y0=(int)Math.Floor(y);double fx=x-x0,fy=y-y0;
+            for(int dy=0;dy<2;dy++)for(int dx=0;dx<2;dx++)
+            {int xx=x0+dx,yy=y0+dy;if(xx<0||xx>=width||yy<0||yy>=height)continue;double weight=(dx==0?1-fx:fx)*(dy==0?1-fy:fy);if(!rows.TryGetValue(yy,out var list))rows[yy]=list=[];list.Add((i,xx,weight));}
+        }
+        Read(png,(y,row)=>{if(!rows.TryGetValue(y,out var list))return;foreach(var (index,x,weight) in list){int p=x*4;double alpha=row[p+3]/255.0;for(int k=0;k<3;k++)result[index][k]+=row[p+k]/255.0*alpha*weight;result[index][3]+=alpha*weight;}});
+        return result;
+    }
     static int Paeth(int a,int b,int c){int p=a+b-c,pa=Math.Abs(p-a),pb=Math.Abs(p-b),pc=Math.Abs(p-c);return pa<=pb&&pa<=pc?a:pb<=pc?b:c;}
     sealed class Parts(byte[] bytes,List<(int Offset,int Length)> spans):Stream
     {

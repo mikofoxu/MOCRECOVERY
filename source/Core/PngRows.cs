@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 namespace MocRecovery;
-// Bounded row decoder for matching only; never rewrites source artwork.
+// Bounded row decoder for atlas cropping and artwork matching; never rewrites source artwork.
 public static class PngRows
 {
     public static (int Width,int Height) Size(byte[] png)
@@ -13,13 +13,52 @@ public static class PngRows
     }
     public static void Read(byte[] png,Action<int,byte[]> consume)
     {
-        var (width,height)=Size(png);int type=png[25],channels=type switch{2=>3,6=>4,_=>0};
-        if(png[24]!=8||png[28]!=0||channels==0)throw new InvalidDataException("Artwork matching supports non-interlaced 8-bit RGB/RGBA PNGs. Original artwork is still preserved.");
-        var spans=new List<(int,int)>();
-        for(int p=8;p+12<=png.Length;)
-        {int n=BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(p));if(n<0||n>png.Length-p-12)throw new InvalidDataException("Invalid PNG chunk length.");string tag=Encoding.ASCII.GetString(png,p+4,4);if(tag=="IDAT")spans.Add((p+8,n));if(tag=="tRNS")throw new InvalidDataException("RGB transparency-key PNG is not supported for matching.");p+=n+12;if(tag=="IEND")break;}
+        var (width, height) = Size(png);
+        int depth = png[24], type = png[25];
+        bool indexed = type == 3;
+        int channels = type switch { 2 => 3, 6 => 4, _ => 1 };
+        bool supported = indexed ? depth is 1 or 2 or 4 or 8 : (type is 2 or 6) && depth == 8;
+        if (!supported || png[28] != 0)
+            throw new InvalidDataException("Artwork recovery supports non-interlaced indexed PNGs and 8-bit RGB/RGBA PNGs.");
+        var spans = new List<(int,int)>();
+        byte[] palette = [];
+        bool hasTransparency = false;
+        for (int p = 8; p <= png.Length - 12;)
+        {
+            int n = BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(p));
+            if (n < 0 || n > png.Length - p - 12) throw new InvalidDataException("Invalid PNG chunk length.");
+            string tag = Encoding.ASCII.GetString(png, p + 4, 4);
+            var data = png.AsSpan(p + 8, n);
+            if (indexed && tag == "PLTE")
+            {
+                if (palette.Length != 0 || spans.Count != 0 || n == 0 || n % 3 != 0 || n / 3 > (1 << depth))
+                    throw new InvalidDataException("Invalid indexed PNG palette.");
+                palette = new byte[n / 3 * 4];
+                for (int i = 0; i < n / 3; i++)
+                {
+                    data.Slice(i * 3, 3).CopyTo(palette.AsSpan(i * 4));
+                    palette[i * 4 + 3] = 255;
+                }
+            }
+            if (tag == "tRNS")
+            {
+                if (!indexed) throw new InvalidDataException("Transparency-key PNGs are unsupported for artwork recovery.");
+                if (hasTransparency || spans.Count != 0 || n == 0 || n > palette.Length / 4)
+                    throw new InvalidDataException("Invalid indexed PNG transparency table.");
+                for (int i = 0; i < n; i++) palette[i * 4 + 3] = data[i];
+                hasTransparency = true;
+            }
+            if (tag == "IDAT")
+            {
+                if (indexed && palette.Length == 0) throw new InvalidDataException("Indexed PNG has no palette.");
+                spans.Add((p + 8, n));
+            }
+            p += n + 12;
+            if (tag == "IEND") break;
+        }
+        int rowBytes = indexed ? (width * depth + 7) / 8 : width * channels;
         using var parts=new Parts(png,spans);using var z=new ZLibStream(parts,CompressionMode.Decompress);
-        byte[] previous=new byte[checked(width*channels)],row=new byte[previous.Length],rgba=new byte[checked(width*4)];
+        byte[] previous=new byte[rowBytes],row=new byte[previous.Length],rgba=new byte[checked(width*4)];
         for(int y=0;y<height;y++)
         {
             int filter=z.ReadByte();if(filter<0||filter>4)throw new InvalidDataException("Invalid PNG row filter.");z.ReadExactly(row);
@@ -28,7 +67,19 @@ public static class PngRows
                 int a=i>=channels?row[i-channels]:0,b=previous[i],c=i>=channels?previous[i-channels]:0;
                 int predictor=filter switch{0=>0,1=>a,2=>b,3=>(a+b)/2,_=>Paeth(a,b,c)};row[i]=unchecked((byte)(row[i]+predictor));
             }
-            for(int x=0;x<width;x++){int s=x*channels,d=x*4;rgba[d]=row[s];rgba[d+1]=row[s+1];rgba[d+2]=row[s+2];rgba[d+3]=channels==4?row[s+3]:(byte)255;}
+            if (indexed)
+            {
+                int mask = (1 << depth) - 1;
+                for (int x = 0; x < width; x++)
+                {
+                    int bit = x * depth;
+                    int shift = 8 - depth - (bit % 8);
+                    int index = (row[bit / 8] >> shift) & mask;
+                    if (index >= palette.Length / 4) throw new InvalidDataException("PNG pixel references a missing palette entry.");
+                    palette.AsSpan(index * 4, 4).CopyTo(rgba.AsSpan(x * 4));
+                }
+            }
+            else for(int x=0;x<width;x++){int s=x*channels,d=x*4;rgba[d]=row[s];rgba[d+1]=row[s+1];rgba[d+2]=row[s+2];rgba[d+3]=channels==4?row[s+3]:(byte)255;}
             consume(y,rgba);(row,previous)=(previous,row);
         }
     }

@@ -1,4 +1,6 @@
-# MOC3 Recovery for Windows — 1.8.5
+# MOC3 Recovery for Windows — 1.8.6
+
+Version 1.8.6 adds indexed PNG atlas support for mesh crops and PSD matching. See CHANGES-1.8.6.md.
 
 Version 1.8.5 groups recovery options into two columns and adds a PSD list and scrollable report with copying. See CHANGES-1.8.5.md.
 
@@ -14,7 +16,7 @@ Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the 
 
 ## Runtime artwork and blend shapes in 1.7.0
 
-Conversion reads the selected MOC3, its runtime companions and any selected PSD. The original editor project is never an input. Each mesh with a supported atlas page gets a cropped, triangle-masked source image unless it already has a verified PSD source link. The recovery ZIP includes individual PNGs and their mesh IDs and atlas bounds under `editor-import/atlas-artwork/`. Crops follow the atlas orientation. PNG extraction currently supports non-interlaced 8-bit RGB and RGBA pages. Missing or unsupported pages are reported.
+Conversion reads the selected MOC3, its runtime companions and any selected PSD. The original editor project is never an input. Each mesh with a supported atlas page gets a cropped, triangle-masked source image unless it already has a verified PSD source link. The recovery ZIP includes individual PNGs and their mesh IDs and atlas bounds under `editor-import/atlas-artwork/`. Crops follow the atlas orientation. PNG extraction currently supports non-interlaced indexed (1/2/4/8-bit), RGB (8-bit) and RGBA (8-bit) pages. Missing or unsupported pages are reported.
 
 Version 1.8 recovers editable warp and ArtMesh blend shapes and their native weight constraints. For Cubism 5.0-compatible runtime exports, it also restores rotation deformer, part and glue blend targets. Output.recovery.txt lists counts for each type. See CHANGES-1.8.md for details.
 

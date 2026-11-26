@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 2.0
+# MOC3 Recovery for Windows — 2.01
 
-Version 2.0 adds an Artwork tab for reviewing each mesh’s source artwork and placement. See [CHANGES.md](../CHANGES.md).
+Version 2.01 can label generically named ArtMeshes using their owning Part and the number from their runtime ID. See [CHANGES.md](../CHANGES.md).
 
 Version 1.91 preserves each warp deformer’s transform mode. See [CHANGES.md](../CHANGES.md).
 

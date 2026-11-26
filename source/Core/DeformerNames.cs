@@ -81,6 +81,41 @@ public static class DeformerNames
         notes.Insert(0,$"Deformer display names derived from ArtMeshes: {changed}; retained: {sources.Length-changed}. Stored IDs are preserved.");
         return notes;
     }
+    internal static List<string> NameMeshesFromParts(XDocument doc)
+    {
+        static XElement? Field(XElement source, string type, string name) =>
+            source.Descendants(type).FirstOrDefault(x => (string?)x.Attribute("xs.n") == name);
+
+        var parts = new Dictionary<string, string>();
+        foreach (var part in doc.Descendants("CPartSource").Where(p => p.HasElements))
+        {
+            var guid = (string?)Field(part, "CPartGuid", "guid")?.Attribute("xs.ref");
+            var name = Field(part, "s", "localName")?.Value.Trim();
+            if (guid != null && !string.IsNullOrEmpty(name) && name != "Root Part" &&
+                !Placeholder(name, "Part", "Group") && name.Any(char.IsLetter))
+                parts[guid] = name;
+        }
+        var meshes = doc.Descendants("CArtMeshSource").Where(m => m.HasElements).ToArray();
+        var usedNames = meshes.Select(m => Field(m, "s", "localName")?.Value)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var notes = new List<string>();
+        foreach (var mesh in meshes)
+        {
+            var id = (string?)Field(mesh, "CDrawableId", "id")?.Attribute("idstr");
+            var label = Field(mesh, "s", "localName");
+            var parent = (string?)Field(mesh, "CPartGuid", "parentGuid")?.Attribute("xs.ref");
+            if (id == null || label?.Value != id || !Placeholder(id,"ArtMesh","Mesh","Drawable") ||
+                parent == null || !parts.TryGetValue(parent, out var partName)) continue;
+            int suffixStart = id.Length;
+            while (suffixStart > 0 && char.IsAsciiDigit(id[suffixStart - 1])) suffixStart--;
+            string candidate = partName + id[suffixStart..];
+            if (!usedNames.Add(candidate)) continue;
+            label.Value = candidate;
+            notes.Add($"INFERRED ARTMESH NAME: {id} → {label.Value} (owning Part).");
+        }
+        return notes;
+    }
+
     // Category-only labels describe a region, not a distinct deformer role.
     static readonly HashSet<string> BroadLabels=new(StringComparer.OrdinalIgnoreCase)
         {"face","head","body","hair","model","group","parts","part","artwork","default","unnamed"};

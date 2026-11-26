@@ -1,3 +1,7 @@
+# MocRecovery 2.01
+
+- The optional naming pass labels generically named ArtMeshes with their owning Part name followed by the numeric suffix of their runtime ID, such as Light111. The original ID is preserved. Existing descriptive names and PSD-derived labels take precedence.
+
 # MocRecovery 2.0
 
 - Added an Artwork tab with one row per ArtMesh. It shows the artwork source and image dimensions, and explains skipped crops, including meshes with no triangles or no covered atlas pixels.

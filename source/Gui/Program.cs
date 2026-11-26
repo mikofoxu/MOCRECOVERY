@@ -26,7 +26,7 @@ public sealed class MainWindow : Form
     private readonly LinkLabel status=new(){LinkArea=new LinkArea(0,0),Text="Choose a compiled model to begin.",AutoSize=true};
     private readonly ProgressBar progress=new(){Dock=DockStyle.Fill,Visible=false,Style=ProgressBarStyle.Continuous};
     private readonly Label progressPercent=new(){Text="0%",AutoSize=true,Visible=false,Anchor=AnchorStyles.Left,Margin=new Padding(10,0,0,0)};
-    private readonly CheckBox inferDeformerNames=new(){Text="Guess deformer names from ArtMeshes (experimental)",Checked=true,AutoSize=true};
+    private readonly CheckBox inferDeformerNames=new(){Text="Infer mesh and deformer names (experimental)",Checked=true,AutoSize=true};
     private readonly CheckBox inferLinks=new(){Text="Rebuild linked parameter grids (inferred)",Checked=true,AutoSize=true};
     private readonly Button selectPsd=new(){Text="Add PSD files…",AutoSize=true};
     private readonly Button clearPsd=new(){Text="Clear PSDs",AutoSize=true};
@@ -80,7 +80,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 2.0";
+        Text="MOC3 Recovery 2.01";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;

@@ -85,3 +85,6 @@ PSD artwork matching is checked by default when a PSD is selected. RedFoxGirl: 2
 
 ## Version 1.6.0
 Experimental PSD source texture relinking restores 8 RedFoxGirl source links; 30 meshes are skipped with reasons. Full-resolution held-out pixel samples and canvas-fit checks gate each write. Geometry, UVs, IDs and active atlas inputs remain unchanged. Enabled/disabled integration, four rotations, transform composition, rejected-candidate non-mutation and recovery regression checks pass. Windows/Cubism visual and source-update testing remains outstanding. See CHANGES-1.6.0.md.
+
+## Version 1.6.1
+Determinate percentage progress added. Integration checks verify 0–100 monotonicity, 100 only after committed outputs, no 100 on failure, intermediate ZIP progress and PSD-layer increments. Existing recovery and PSD checks pass. Percentage is stage-based, not a time estimate. Windows visual testing remains outstanding.

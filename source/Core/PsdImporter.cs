@@ -9,7 +9,7 @@ public static class PsdImporter
     static string? N(XElement e)=>(string?)e.Attribute("xs.n");
     static XElement Field(XElement e,string n)=>e.DescendantsAndSelf().First(x=>N(x)==n);
     static XElement Ref(string tag,string id)=>new(tag,new XAttribute("xs.ref",id));
-    public static PsdImportResult Apply(string archivePath,string psdPath,string exportDirectory,bool matchArtwork=false,IReadOnlyList<string>? textures=null,Action<string>? update=null,bool relinkTextures=false)
+    public static PsdImportResult Apply(string archivePath,string psdPath,string exportDirectory,bool matchArtwork=false,IReadOnlyList<string>? textures=null,Action<string>? update=null,bool relinkTextures=false,Action<int>? progress=null)
     {
         matchArtwork|=relinkTextures;
         using var psd=new PsdReader(psdPath);var entries=CaffArchive.Read(archivePath);var doc=XDocument.Load(new MemoryStream(entries["main.xml"]));var shared=doc.Root!.Element("shared")!;
@@ -42,8 +42,10 @@ public static class PsdImporter
         var meshSources=doc.Descendants("CArtMeshSource").Where(e=>e.HasElements).ToArray();
         string Normalize(string s)=>s.EndsWith(".png",StringComparison.OrdinalIgnoreCase)?s[..^4].Trim().ToLowerInvariant():s.Trim().ToLowerInvariant();
         var unique=psd.Layers.Where(l=>l.Section==0).GroupBy(l=>Normalize(l.Name)).ToDictionary(g=>g.Key,g=>g.ToArray());
+        int completedLayers=0,totalLayers=psd.Layers.Count(l=>l.Section==0);
         foreach(var l in psd.Layers.Where(l=>l.Section==0))
         {
+            progress?.Invoke(completedLayers*65/Math.Max(1,totalLayers));
             update?.Invoke($"Importing PSD layer {l.Index+1}/{psd.Layers.Count}: {l.Name}…");
             notes.AddRange(l.Warnings.Select(w=>$"PSD {l.Name}: {w}"));
             try
@@ -68,10 +70,12 @@ public static class PsdImporter
             }
             catch(Exception e) when(e is InvalidDataException or OverflowException or ArgumentException)
             {notes.Add($"PSD LAYER NOT IMPORTED: {l.Name}: {e.Message}");inventory.Add(new{l.Index,l.Name,Error=e.Message});}
+            progress?.Invoke(++completedLayers*65/Math.Max(1,totalLayers));
         }
         int artworkMatches=0,relinkedTextures=0;
         if(matchArtwork)
         {
+            progress?.Invoke(68);
             update?.Invoke("Comparing PSD artwork with texture-atlas meshes…");
             using var model=JsonDocument.Parse(entries["moc2cmo.model.json"]);
             var results=PsdArtworkMatcher.Match(model.RootElement,textures??Array.Empty<string>(),artworkCandidates,notes);
@@ -90,7 +94,9 @@ public static class PsdImporter
             if(relinkTextures)
             {
                 update?.Invoke("Verifying experimental PSD texture-source alignment…");
-                var relinks=PsdTextureRelinker.Apply(doc,model.RootElement,results,modelImages,entries,psd.Layers,textures??Array.Empty<string>(),update);
+                int started=0,total=results.Count(r=>r.Status.StartsWith("Accepted"));
+                void LinkUpdate(string message){update?.Invoke(message);progress?.Invoke(78+(started++)*18/Math.Max(1,total));}
+                var relinks=PsdTextureRelinker.Apply(doc,model.RootElement,results,modelImages,entries,psd.Layers,textures??Array.Empty<string>(),LinkUpdate);
                 relinkedTextures=relinks.Count(r=>r.Status.StartsWith("Relinked"));
                 foreach(var group in relinks.Where(r=>r.Status.StartsWith("Relinked")).GroupBy(r=>r.LayerIndex!.Value))Field(modelImages[group.Key],"memo").Value="PSD source raster. Experimental source links: "+string.Join(", ",group.Select(r=>r.MeshId))+". Active atlas retained; alignment inferred.";
                 foreach(var r in relinks)notes.Add($"PSD TEXTURE RELINK: {r.MeshId}: {r.Status}");
@@ -104,7 +110,9 @@ public static class PsdImporter
         var modelGroups=doc.Descendants("carray_list").Single(e=>N(e)=="_modelImageGroups");modelGroups.Add(Ref("CModelImageGroup",modelGroupId));Count(modelGroups);
         File.WriteAllText(Path.Combine(exportDirectory,"layers.json"),JsonSerializer.Serialize(new{psd.Width,psd.Height,Groups=psd.Layers.Where(l=>l.Section is 1 or 2).Select(l=>new{l.Index,l.Name,l.Parent,l.Visible,l.Opacity}),Layers=inventory},new JsonSerializerOptions{WriteIndented=true}));
         File.WriteAllText(Path.Combine(exportDirectory,"README.txt"),"PSD SOURCE ARTWORK\nOriginal layer rasters are embedded as source images in the CMO3 and exported as numbered PNGs here. layers.json contains original names, positions, visibility, group membership and matching candidates. Original PSD is preserved in the recovery ZIP.\n\nRig texture links stay on the recovered atlas. Unique name matches restore display labels only; they are not proof of correspondence. Unmatched artwork is available but no missing mesh or rig is invented. Masks/effects, non-normal blends and smart objects have limitations noted per layer. Raw PNG alpha excludes layer opacity and visibility, which remain metadata. When artwork matching is enabled, artwork-matches.json records accepted, ambiguous and rejected candidates. Accepted matches update display names and source-image memos only. When experimental texture relinking is selected, accepted PSD source-image links and inferred alignment transforms are restored; texture-relinks.json records results and skips. The active atlas remains in use, as in an atlas-backed original Editor project. Original placement transforms are not guaranteed. PSD groups remain source-image groups, not rig parts/deformers.\n");
+        progress?.Invoke(97);
         ProjectEnricher.Validate(doc);using var ms=new MemoryStream();using(var writer=System.Xml.XmlWriter.Create(ms,new(){Encoding=new UTF8Encoding(false),Indent=true,CloseOutput=false}))doc.Save(writer);entries["main.xml"]=ms.ToArray();CaffArchive.Write(archivePath,entries);
+        progress?.Invoke(100);
         return new(psd.Layers.Count(l=>l.Section==0),imported,matches,notes){ArtworkMatches=artworkMatches,RelinkedTextures=relinkedTextures};
     }
 }

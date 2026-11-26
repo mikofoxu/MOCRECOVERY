@@ -12,7 +12,11 @@ var p=Recovery.Inspect(model,outputDir);
 Check(p.Output==Path.Combine(outputDir,"RedFoxGirl.cmo3"),"same basename in application folder, separate from input");
 Check(p.Textures.Count==1 && p.Textures[0].EndsWith("texture_00.png"),"manifest texture ordering");
 Check(p.Assets.Any(f=>f.EndsWith(".physics3.json")) && p.Assets.Any(f=>f.EndsWith(".exp3.json")),"physics and unreferenced expression preservation");
-var text=await Recovery.ConvertAsync(p,engine,false);
+var progressValues=new List<int>();
+var numeric=new CaptureProgress(v=>{if(v.Percent==100)Check(p.Outputs.All(File.Exists),"100 percent emitted only after outputs exist");progressValues.Add(v.Percent);});
+var text=await Recovery.ConvertAsync(p,engine,false,numericProgress:numeric);
+Check(progressValues.First()==0&&progressValues.Last()==100&&progressValues.All(v=>v>=0&&v<=100)&&progressValues.Zip(progressValues.Skip(1)).All(p=>p.First<=p.Second),"progress runs from 0 to 100 monotonically");
+Check(progressValues.Any(v=>v>=88&&v<98),"archive writing reports intermediate progress");
 Check(File.Exists(p.Output)&&File.Exists(p.Report)&&File.Exists(p.Backup),"CMO3, text report and recovery ZIP produced");
 Check(text.Contains("Native physics setups restored: 12") && text.Contains("Native parameter folders restored (excluding root): 1"),"native physics and parameter groups restored");
 var archiveData=CaffArchive.Read(p.Output);
@@ -55,7 +59,9 @@ Check(text.Contains("meshes: 38")&&text.Contains("parameters: 49")&&text.Contain
 using(var z=ZipFile.OpenRead(p.Backup)){Check(z.Entries.Any(e=>e.FullName.EndsWith(".physics3.json"))&&z.Entries.Any(e=>e.FullName.EndsWith("runtime.model.json")),"ZIP includes original settings and recovered data");}
 var hash=System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(p.Output));
 try{await Recovery.ConvertAsync(p,engine,false);throw new Exception("overwrite unexpectedly allowed");}catch(IOException){Console.WriteLine("PASS: unapproved overwrite refused");}
-try{await Recovery.ConvertAsync(p,"/bin/false",true);throw new Exception("engine failure unexpectedly succeeded");}catch(InvalidDataException){Console.WriteLine("PASS: failed engine reported");}
+var failedProgress=new List<int>();
+try{await Recovery.ConvertAsync(p,"/bin/false",true,numericProgress:new CaptureProgress(v=>failedProgress.Add(v.Percent)));throw new Exception("engine failure unexpectedly succeeded");}catch(InvalidDataException){Console.WriteLine("PASS: failed engine reported");}
+Check(!failedProgress.Contains(100),"failed conversion never reports 100 percent");
 Check(hash.SequenceEqual(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(p.Output))),"engine failure preserves previous output");
 await Recovery.ConvertAsync(p,engine,true);
 Check(Directory.GetFiles(outputDir,"RedFoxGirl.cmo3.*.bak").Length==1,"approved replacement retains backup");
@@ -83,3 +89,5 @@ Check(archiveData["moc2cmo.model.json"].SequenceEqual(disabled["moc2cmo.model.js
 FeatureChecks.Run(dir,p.Output);
 AdvancedChecks.Run(dir,p.Output,p.PhysicsInfo!);
 Console.WriteLine("ALL CHECKS PASSED");
+
+sealed class CaptureProgress(Action<RecoveryProgress> capture):IProgress<RecoveryProgress>{public void Report(RecoveryProgress value)=>capture(value);}

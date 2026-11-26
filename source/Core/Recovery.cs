@@ -22,6 +22,7 @@ public sealed class Plan
     public string? PhysicsInfo { get; set; }
     public string[] Outputs => [Output, Report, Backup];
 }
+public sealed record RecoveryProgress(int Percent,string Message);
 public static class Recovery
 {
     public static Plan Inspect(string input, string? outputDirectory = null)
@@ -119,7 +120,7 @@ public static class Recovery
     }
     public static string NaturalKey(string s)=>Regex.Replace(s,@"\d+",m=>m.Value.PadLeft(12,'0'));
 
-    public static async Task<string> ConvertAsync(Plan plan,string engine,bool overwrite,IProgress<string>? progress=null)
+    public static async Task<string> ConvertAsync(Plan plan,string engine,bool overwrite,IProgress<string>? progress=null,IProgress<RecoveryProgress>? numericProgress=null)
     {
         var conflicts=plan.Outputs.Where(File.Exists).ToArray();
         if(conflicts.Length>0 && !overwrite)throw new IOException("Output already exists: "+string.Join(", ",conflicts));
@@ -129,10 +130,13 @@ public static class Recovery
         var temp=Path.Combine(outputDir,".moc-recovery-"+Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
         string stage="Starting recovery";
-        void Stage(string message){stage=message;progress?.Report(message);}
+        int percent=0;
+        void SetProgress(int value,string message){percent=Math.Max(percent,Math.Clamp(value,0,100));stage=message;progress?.Report(message);numericProgress?.Report(new(percent,message));}
+        void Stage(string message)=>SetProgress(percent,message);
+        SetProgress(0,"Starting recovery…");
         try
         {
-            Stage("Reading model and reconstructing the editable rig…");
+            SetProgress(3,"Reading model and reconstructing the editable rig…");
             var textures=new List<string>();var missing=new List<string>();
             // A valid transparent PNG is used at each missing index, preserving later pages.
             var transparent=Path.Combine(temp,"transparent.png");
@@ -152,26 +156,26 @@ public static class Recovery
             await process.WaitForExitAsync();var output=await stdout;var error=await stderr;
             if(process.ExitCode!=0)throw new InvalidDataException("Conversion failed. Existing outputs were not changed.\r\n"+error);
             using var summary=JsonDocument.Parse(output);var s=summary.RootElement;
-            Stage("Restoring physics and parameter groups from companion files…");
+            SetProgress(23,"Restoring physics and parameter groups from companion files…");
             var enrichment=ProjectEnricher.Apply(staged,plan);
             using(var f=File.OpenRead(staged)){byte[] magic=new byte[4];f.ReadExactly(magic);if(!magic.AsSpan().SequenceEqual("CAFF"u8))throw new InvalidDataException("Engine did not produce a CMO3 archive.");}
-            Stage("Preparing companion motions and checking recovered geometry…");
+            SetProgress(28,"Preparing companion motions and checking recovered geometry…");
             var extra=Path.Combine(temp,"editor-import");
             using var recovered=JsonDocument.Parse(File.ReadAllBytes(modelJson));
             var companions=CompanionExporter.Export(plan,recovered.RootElement,extra);
             PsdImportResult? psdResult=null;
             if(plan.PsdInput!=null)
             {
-                Stage("Importing optional PSD source artwork… Large layers may take a few minutes.");
-                psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"),plan.MatchPsdArtwork,plan.Textures,Stage,plan.RelinkPsdTextures);
+                SetProgress(30,"Importing optional PSD source artwork… Large layers may take a few minutes.");
+                psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"),plan.MatchPsdArtwork,plan.Textures,Stage,plan.RelinkPsdTextures,p=>SetProgress(30+p*45/100,stage));
             }
-            Stage("Naming deformers from ArtMeshes…");
+            SetProgress(76,"Naming deformers from ArtMeshes…");
             var deformerNames=DeformerNames.NameFromArtMeshes(staged);
-            Stage("Validating recovered project…");
+            SetProgress(80,"Validating recovered project…");
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.6.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.6.1").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -222,8 +226,11 @@ public static class Recovery
             report.AppendLine((psdResult==null?"Original PSD layers were not supplied. ":"Supplied PSD artwork is imported separately; it cannot restore omitted rigging. ")+"Removed mesh geometry, editor-only controls, original GUIDs, deformer labels, authoring history and comments are not fully represented by a MOC3. Exact missing rig object names/counts cannot be determined without the original CMO3.");
             report.AppendLine("Rig texture links use the recovered atlas pages. Optional PSD source images are imported separately; experimental source relinking results are listed above when enabled. Advanced/version-specific features may not round-trip exactly.");
             report.AppendLine("A valid archive does not prove visual or animated equivalence. Open in Cubism Editor and check the rig before use.");
-            Stage("Preserving companion files and writing the report…");
+            SetProgress(88,"Preserving companion files and writing the report…");
             var zip=Path.Combine(temp,"assets.zip");
+            var generatedFiles=Directory.GetFiles(extra,"*",SearchOption.AllDirectories);
+            int savedFiles=0,totalFiles=plan.Assets.Count+generatedFiles.Length+1+(plan.PsdInput!=null?1:0);
+            void SavedFile()=>SetProgress(88+(++savedFiles)*9/Math.Max(1,totalFiles),"Preserving companion files and writing the report…");
             using(var archive=ZipFile.Open(zip,ZipArchiveMode.Create))
             {
                 foreach(var asset in plan.Assets.Order(StringComparer.OrdinalIgnoreCase))
@@ -232,16 +239,17 @@ public static class Recovery
                     var relative=Path.GetRelativePath(dir,asset);
                     if(relative.StartsWith("..") || Path.IsPathRooted(relative))relative="selected-textures/"+Guid.NewGuid().ToString("N")+"-"+Path.GetFileName(asset);
                     archive.CreateEntryFromFile(asset,"original/"+relative.Replace('\\','/'),CompressionLevel.Optimal);
-                    report.AppendLine("Preserved: "+asset);
+                    report.AppendLine("Preserved: "+asset);SavedFile();
                 }
-                if(plan.PsdInput!=null)archive.CreateEntryFromFile(plan.PsdInput,"original/source-artwork/"+Path.GetFileName(plan.PsdInput),CompressionLevel.Optimal);
-                foreach(var generated in Directory.GetFiles(extra,"*",SearchOption.AllDirectories))
-                    archive.CreateEntryFromFile(generated,"editor-import/"+Path.GetRelativePath(extra,generated).Replace('\\','/'),CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(modelJson,"recovered/runtime.model.json",CompressionLevel.Optimal);
+                if(plan.PsdInput!=null){archive.CreateEntryFromFile(plan.PsdInput,"original/source-artwork/"+Path.GetFileName(plan.PsdInput),CompressionLevel.Optimal);SavedFile();}
+                foreach(var generated in generatedFiles)
+                {archive.CreateEntryFromFile(generated,"editor-import/"+Path.GetRelativePath(extra,generated).Replace('\\','/'),CompressionLevel.Optimal);SavedFile();}
+                archive.CreateEntryFromFile(modelJson,"recovered/runtime.model.json",CompressionLevel.Optimal);SavedFile();
             }
             var reportPath=Path.Combine(temp,"report.txt");File.WriteAllText(reportPath,report.ToString(),Encoding.UTF8);
             // Commit only after conversion, ZIP and report all succeeded. Existing files are
             // retained as uniquely named .bak files when replacement was explicitly approved.
+            SetProgress(98,"Saving completed output files…");
             var pairs=new[]{(staged,plan.Output),(zip,plan.Backup),(reportPath,plan.Report)};
             var installed=new List<string>();var backups=new List<(string,string)>();
             try
@@ -264,6 +272,7 @@ public static class Recovery
                 throw;
             }
             if(backups.Count>0)report.AppendLine("Previous output files were retained as timestamped .bak files in the same folder.");
+            SetProgress(100,"Recovery complete.");
             return report.ToString();
         }
         catch(OutOfMemoryException e){throw new IOException("Memory allocation failed during: "+stage+"\r\nClose other memory-heavy apps and retry. If a PSD was selected, No PSD can be used temporarily. Existing outputs were not replaced.",e);}

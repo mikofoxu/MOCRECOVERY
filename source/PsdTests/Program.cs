@@ -14,7 +14,9 @@ RelinkChecks.Run();
 if(args.Length==0)return;
 if(args.Length is not (4 or 5 or 6))throw new ArgumentException("Optional arguments: PSD, MOC3, engine, empty output directory, optional true/false artwork matching, optional true/false relinking");
 var plan=Recovery.Inspect(args[1],args[3]);plan.PsdInput=Path.GetFullPath(args[0]);if(args.Length>=5)plan.MatchPsdArtwork=bool.Parse(args[4]);if(args.Length==6)plan.RelinkPsdTextures=bool.Parse(args[5]);
-var report=await Recovery.ConvertAsync(plan,Path.GetFullPath(args[2]),false);
+var progressValues=new List<int>();
+var report=await Recovery.ConvertAsync(plan,Path.GetFullPath(args[2]),false,numericProgress:new PsdProgress(v=>progressValues.Add(v.Percent)));
+Check(progressValues.Any(v=>v>30&&v<60)&&progressValues.Last()==100&&progressValues.Zip(progressValues.Skip(1)).All(p=>p.First<=p.Second),"PSD layers advance overall percentage without regression");
 Check(report.Contains("source images imported:"),"PSD import reported");
 var archive=CaffArchive.Read(plan.Output);var xml=XDocument.Load(new MemoryStream(archive["main.xml"]));ProjectEnricher.Validate(xml);
 Check(xml.Descendants("CModelImageGroup").Any(g=>g.Elements("s").Any(s=>(string?)s.Attribute("xs.n")=="groupName"&&s.Value=="PSD source artwork")),"native PSD source artwork group");
@@ -57,3 +59,5 @@ foreach(var mesh in xml.Descendants("CArtMeshSource").Where(e=>e.HasElements))
  Check(extension.Elements().Single(e=>(string?)e.Attribute("xs.n")=="currentTextureInputData").Name=="CTextureInput_TextureAtlasRegion",id+": active atlas input preserved");
 }
 Console.WriteLine("PSD CHECKS PASSED");
+
+sealed class PsdProgress(Action<RecoveryProgress> capture):IProgress<RecoveryProgress>{public void Report(RecoveryProgress value)=>capture(value);}

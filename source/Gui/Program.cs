@@ -24,7 +24,8 @@ public sealed class MainWindow : Form
     private readonly Button convert=new(){Text="Create .cmo3",AutoSize=true,Enabled=false};
     private readonly Button openFolder=new(){Text="Open folder",AutoSize=true,Enabled=false};
     private readonly Label status=new(){Text="Choose a compiled model to begin.",AutoSize=true};
-    private readonly ProgressBar progress=new(){Dock=DockStyle.Fill,Visible=false,Style=ProgressBarStyle.Marquee};
+    private readonly ProgressBar progress=new(){Dock=DockStyle.Fill,Visible=false,Style=ProgressBarStyle.Continuous};
+    private readonly Label progressPercent=new(){Text="0%",AutoSize=true,Visible=false,Anchor=AnchorStyles.Left,Margin=new Padding(10,0,0,0)};
     private readonly CheckBox inferLinks=new(){Text="Rebuild linked parameter grids (inferred)",Checked=true,AutoSize=true};
     private readonly Button selectPsd=new(){Text="Choose optional PSD…",AutoSize=true};
     private readonly Button clearPsd=new(){Text="No PSD",AutoSize=true};
@@ -41,7 +42,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.6.0";
+        Text="MOC3 Recovery 1.6.1";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -96,8 +97,10 @@ public sealed class MainWindow : Form
         layout.Controls.Add(textureButtons,0,5);
         layout.Controls.Add(ButtonRow(convert,openFolder),0,6);
         status.Margin=new Padding(0,8,0,8);layout.Controls.Add(status,0,7);
-        progress.Height=8;progress.Margin=new Padding(0,0,0,12);
-        layout.Controls.Add(progress,0,8);
+        var progressRow=new TableLayoutPanel(){Dock=DockStyle.Fill,AutoSize=true,ColumnCount=2,RowCount=1,Margin=new Padding(0,0,0,12)};
+        progressRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));progressRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        progress.Height=18;progress.Margin=Padding.Empty;progress.MinimumSize=new Size(0,18);
+        progressRow.Controls.Add(progress,0,0);progressRow.Controls.Add(progressPercent,1,0);layout.Controls.Add(progressRow,0,8);
         var reportHeading=new Label(){Text="Recovery report",AutoSize=true,
             Font=new Font("Segoe UI",10,FontStyle.Bold),Margin=new Padding(0,8,0,8)};
         inferLinks.Margin=new Padding(0,8,0,8);layout.Controls.Add(inferLinks,0,9);
@@ -139,6 +142,7 @@ public sealed class MainWindow : Form
         try
         {
             var next=Recovery.Inspect(dialog.FileName, AppContext.BaseDirectory);plan=next;psdPath=null;psdStatus.Text="PSD: none (optional)";matchPsd.Checked=true;matchPsd.Enabled=false;relinkPsd.Checked=false;relinkPsd.Enabled=false;input.Text=next.Input;
+            progress.Value=0;progressPercent.Text="0%";progress.Visible=false;progressPercent.Visible=false;
             destination.Text="Output: "+next.Output;RefreshTextures();convert.Enabled=true;openFolder.Enabled=true;
             report.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics and parameter folders will be restored from companion files when available. Other runtime settings are preserved in the recovery ZIP.";
             status.Text="Ready to create "+Path.GetFileName(next.Output)+".";
@@ -169,22 +173,24 @@ public sealed class MainWindow : Form
         }
         plan.PsdInput=psdPath;plan.RelinkPsdTextures=psdPath!=null&&relinkPsd.Checked;relinkPsd.Enabled=false;plan.MatchPsdArtwork=psdPath!=null&&matchPsd.Checked;matchPsd.Enabled=false;
         plan.InferParameterLinks=inferLinks.Checked;inferLinks.Enabled=false;
-        busy=true;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=false;progress.Visible=true;
+        busy=true;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=false;progress.Value=0;progressPercent.Text="0%";progress.Visible=true;progressPercent.Visible=true;
+        bool acceptingProgress=true;
         var temp=Path.Combine(Path.GetTempPath(),"MocRecovery-"+Guid.NewGuid().ToString("N"));
         try
         {
             Directory.CreateDirectory(temp);var engine=Path.Combine(temp,"moc-recover.exe");
             using(var resource=Assembly.GetExecutingAssembly().GetManifestResourceStream("MocRecovery.Engine.exe")??throw new IOException("The embedded recovery engine is missing."))
             using(var file=File.Create(engine))await resource.CopyToAsync(file);
-            var updates=new Progress<string>(s=>status.Text=s);
+            var updates=new Progress<RecoveryProgress>(p=>{if(!acceptingProgress)return;progress.Value=p.Percent;progressPercent.Text=p.Percent+"%";status.Text=p.Message;});
             var selected=plan;
-            report.Text=await Task.Run(()=>Recovery.ConvertAsync(selected,engine,replace,updates));
+            report.Text=await Task.Run(()=>Recovery.ConvertAsync(selected,engine,replace,numericProgress:updates));
+            acceptingProgress=false;progress.Value=100;progressPercent.Text="100%";
             status.Text="Saved "+Path.GetFileName(plan.Output)+" — review the report below.";
         }
-        catch(Exception e){status.Text="Recovery failed.";report.Text="RECOVERY FAILED\r\n\r\n"+e.ToString();MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+        catch(Exception e){acceptingProgress=false;status.Text="Recovery failed.";report.Text="RECOVERY FAILED\r\n\r\n"+e.ToString();MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally
         {
-            inferLinks.Enabled=true;matchPsd.Enabled=psdPath!=null;relinkPsd.Enabled=psdPath!=null&&matchPsd.Checked;busy=false;progress.Visible=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
+            inferLinks.Enabled=true;matchPsd.Enabled=psdPath!=null;relinkPsd.Enabled=psdPath!=null&&matchPsd.Checked;busy=false;acceptingProgress=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
             try{Directory.Delete(temp,true);}catch{}
         }
     }

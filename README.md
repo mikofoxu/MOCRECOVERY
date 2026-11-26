@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.6.0
+# MOC3 Recovery for Windows — 1.6.1
 
-Version 1.6.0 (includes the responsible-use notice and PSD limitations).
+Version 1.6.1 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -182,3 +182,7 @@ See CHANGES-1.5.1.md. Matching details are exported to editor-import/psd-source/
 The new checkbox attempts to restore source-image references for strong, unambiguous artwork matches. It fits a scale/quarter-turn/translation, checks held-out full-resolution PNG samples, and verifies the existing atlas-to-canvas fit. Accepted source references and optional alignment transforms are written into the CMO3. Active atlas texture inputs, UVs, texture state, rig geometry and IDs remain unchanged, following the atlas-backed structure of the supplied original project.
 
 This is source relinking, not an immediate switch to PSD rendering or an atlas rebuild. A source link passing these sampled checks is not proof of identical Cubism behavior; check placement in Cubism before updating source images or rebuilding the atlas. Original authoring transforms, layer identifiers and future PSD reimport behavior are not guaranteed. Results and skip reasons appear on screen and in editor-import/psd-source/texture-relinks.json. Read CHANGES-1.6.0.md for details and test scope.
+
+## Version 1.6.1 — Percentage progress
+
+Conversion now shows a filled progress bar with a numeric percentage. It advances by recovery stage, PSD layer, experimental link candidate and archived file. These are weighted stage estimates, not elapsed-time estimates; the percentage can pause while a large item or the backend engine is processing. There is no timer-based simulated progress. It reaches 100% only after output files are successfully installed. A failure retains the last percentage with the error report. Selecting another model clears the previous progress; starting a conversion resets it to 0%.

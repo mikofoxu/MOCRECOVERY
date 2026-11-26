@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.7.3
+# MOC3 Recovery for Windows — 1.8
 
-Version 1.7.3 (includes the responsible-use notice and PSD limitations).
+Version 1.8 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -8,7 +8,7 @@ Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the 
 
 Conversion reads the selected MOC3, its runtime companions and any selected PSD. The original editor project is never an input. Each mesh with a supported atlas page gets a cropped, triangle-masked source image unless it already has a verified PSD source link. The recovery ZIP includes individual PNGs and their mesh IDs and atlas bounds under `editor-import/atlas-artwork/`. Crops follow the atlas orientation. PNG extraction currently supports non-interlaced 8-bit RGB and RGBA pages. Missing or unsupported pages are reported.
 
-Version 1.7.3 recovers editable warp and ArtMesh blend shapes from the MOC3, including native weight constraints and objects with multiple ordinary keyforms. The recovery report lists totals by object type and identifies unsupported target types. See CHANGES-1.7.3.md for details.
+Version 1.8 recovers editable warp and ArtMesh blend shapes and their native weight constraints. For Cubism 5.0-compatible runtime exports, it also restores rotation deformer, part and glue blend targets. Output.recovery.txt lists counts for each type. See CHANGES-1.8.md for details.
 
 ## Run
 
@@ -20,7 +20,7 @@ No Python, Rust, Visual Studio, or separate .NET installation is needed to run t
 1. Click **Choose .moc3…** and select the compiled model.
 2. Leave its companion files beside it, with the original folder structure. The matching `.model3.json` supplies texture paths and ordering automatically.
 3. If necessary, click **Choose textures…**, select atlas PNGs, and use Move up/down to set texture indices 0, 1, 2, etc. Missing texture pages use transparent placeholders.
-4. Optionally click **Choose optional PSD…** after selecting the model. Leave it unset if unavailable; **No PSD** clears the selection. Selecting a PSD enables and checks **Try preserving PSD layer names using artwork matching (experimental)** by default. Uncheck it to use the previous name-only behavior. The separate **Attempt PSD texture relinking (Warning: Experimental)** checkbox is off by default and requires a PSD plus artwork matching. Check it to attempt verified source-image links. Then leave **Rebuild linked parameter grids (inferred)** checked to combine likely paired sliders, or uncheck it for separate sliders. Click **Create .cmo3**.
+4. Select multiple PSDs together or add more from another folder. They are processed one at a time. For multiple files, look under numbered folders in `editor-import/psd-source/` and `original/source-artwork/`. Optionally click **Add PSD files…** after selecting the model. Leave it unset if unavailable; **Clear PSDs** clears the selection. Selecting a PSD enables and checks **Try preserving PSD layer names using artwork matching (experimental)** by default. Uncheck it to use the previous name-only behavior. The separate **Attempt PSD texture relinking (Warning: Experimental)** checkbox is off by default and requires a PSD plus artwork matching. Check it to attempt verified source-image links. Then leave **Rebuild linked parameter grids (inferred)** checked to combine likely paired sliders, or uncheck it for separate sliders. Click **Create .cmo3**.
 5. Read the report in the window. **Open folder** opens the output location.
 6. Extract `A.recovery.zip` and read `editor-import/README.txt`. Import its motions onto the recovered model’s animation track in Cubism.
 
@@ -96,7 +96,7 @@ The .NET runtime and third-party dependencies retain their own licenses. See the
 
 Keep the original runtime companion files alongside the MOC3. The new importer does not copy rig data from an original CMO3 and requires no original project at runtime. No Example IDs or settings are hard-coded into the importer.
 
-See COMPARISON.md for remaining differences. Neither Windows GUI execution nor a Cubism Editor open/re-export test has been performed in this environment. Numeric/static matches do not establish complete animated equivalence. Deformer keyform coordinates, interpolation behavior, editor extensions and layer layouts have not all been proven equivalent.
+See CHANGES-1.1.0_CHANGES-1.4.4.md for remaining differences. Neither Windows GUI execution nor a Cubism Editor open/re-export test has been performed in this environment. Numeric/static matches do not establish complete animated equivalence. Deformer keyform coordinates, interpolation behavior, editor extensions and layer layouts have not all been proven equivalent.
 
 ## Version 1.1.1 output location
 
@@ -131,7 +131,7 @@ Official motion import instructions: https://docs.live2d.com/en/cubism-editor-ma
 
 ## Version 1.4.0 — optional PSD source artwork
 
-PSD is optional. Without it, the recovery workflow remains available using the MOC3, textures and companion files. Select the MOC3 first, then use Choose optional PSD. Selecting another MOC3 clears the PSD selection to avoid accidental cross-model imports.
+PSD is optional. Without it, the recovery workflow remains available using the MOC3, textures and companion files. Select the MOC3 first, then use Add PSD files. Selecting another MOC3 clears the PSD selection to avoid accidental cross-model imports.
 
 With a supported PSD, the CMO3 receives a separate **PSD source artwork** image group. Available layers retain original names, offsets, visibility, opacity and source-folder membership. Cropped raw raster PNGs and a layer/matching inventory are also saved under `editor-import/psd-source/` in the recovery ZIP; the original PSD is preserved under `original/source-artwork/`. PNGs retain raw alpha; opacity and visibility remain separate metadata. The embedded ICC profile is copied into PNGs when present.
 

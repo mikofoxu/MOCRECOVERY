@@ -2,6 +2,8 @@ using MocRecovery;
 using System.IO.Compression;
 using System.Text.Json;
 static void Check(bool value,string label){if(!value)throw new Exception("FAIL: "+label);Console.WriteLine("PASS: "+label);}
+DeformerNameChecks.Run();
+if(args.SequenceEqual(new[]{"--deformer-names"}))return;
 if(args.Length!=3)throw new ArgumentException("model folder, engine path, test output directory required");
 var dir=Path.GetFullPath(args[2]);Directory.CreateDirectory(dir);
 var source=Path.GetFullPath(args[0]);var engine=Path.GetFullPath(args[1]);

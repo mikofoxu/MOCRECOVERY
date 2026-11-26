@@ -68,7 +68,7 @@ public static class PsdTextureRelinker
         {var p=Point(inverse,t.X,t.Y);var s=source.Sample(p.X,p.Y);if(Math.Max(s[3],t.Value[3])<.03)continue;visible++;for(int c=0;c<4;c++){double e=s[c]-t.Value[c];sum+=e*e;count++;}alpha+=Math.Abs(s[3]-t.Value[3]);}
         return count==0?(1,1,0):(Math.Sqrt(sum/count),alpha/visible,visible);
     }
-    public static List<RelinkResult> Apply(XDocument doc,JsonElement model,List<ArtworkMatch> matches,Dictionary<int,XElement> modelImages,Dictionary<string,byte[]> entries,IReadOnlyList<PsdLayer> layers,IReadOnlyList<string> textures,Action<string>? update=null)
+    public static List<RelinkResult> Apply(XDocument doc,JsonElement model,List<ArtworkMatch> matches,Dictionary<int,XElement> modelImages,Dictionary<string,byte[]> entries,IReadOnlyList<PsdLayer> layers,IReadOnlyList<string> textures,Action<string>? update=null,string prefix="")
     {
         var results=new List<RelinkResult>();var objects=doc.Descendants().Where(e=>e.Attribute("xs.id")!=null).ToDictionary(e=>(string)e.Attribute("xs.id")!);
         var sources=doc.Descendants("CArtMeshSource").Where(e=>e.HasElements).ToDictionary(e=>(string)e.Descendants("CDrawableId").Single().Attribute("idstr")!);
@@ -96,7 +96,7 @@ public static class PsdTextureRelinker
                     {
                         var layer=layers.Single(l=>l.Index==match.LayerIndex);if(layer.Opacity!=255||layer.Blend!="norm"||layer.Clipping||layer.Warnings.Count>0)throw new InvalidDataException("PSD opacity, masks, blending or effects require manual review.");
                         if(match.PsdBounds==null||match.AtlasBounds==null)throw new InvalidDataException("Alignment bounds unavailable.");
-                        var bounds=match.PsdBounds;byte[] png=entries[$"psd-layer-{layer.Index:D4}.png"];var(sw,sh)=PngRows.Size(png);var source=new Probe(sw,sh,[bounds[0]-8,bounds[1]-8,bounds[2]+16,bounds[3]+16]);PngRows.Read(png,source.Row);
+                        var bounds=match.PsdBounds;byte[] png=entries[$"psd-layer-{prefix}{layer.Index:D4}.png"];var(sw,sh)=PngRows.Size(png);var source=new Probe(sw,sh,[bounds[0]-8,bounds[1]-8,bounds[2]+16,bounds[3]+16]);PngRows.Read(png,source.Row);
                         var train=Tests(mesh,width,height,probes[id],16,.25);var validation=validationSets[id];
                         var fitted=(double[])match.AtlasBounds.Clone();double best=Error(source,Alignment(bounds,fitted,match.Rotation),train).Rmse;
                         double start=Math.Max(4,Math.Max(fitted[2],fitted[3])/64);

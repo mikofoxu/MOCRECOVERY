@@ -11,6 +11,11 @@ using(var fixture=new PsdReader(Path.Combine(AppContext.BaseDirectory,"grouped.p
 }
 ArtworkChecks.Run();
 RelinkChecks.Run();
+if(args.Length==3)
+{
+    await MultiplePsdChecks.Run(args[0],args[1],args[2]);
+    return;
+}
 if(args.Length==0)return;
 if(args.Length is not (4 or 5 or 6))throw new ArgumentException("Optional arguments: PSD, MOC3, engine, empty output directory, optional true/false artwork matching, optional true/false relinking");
 var plan=Recovery.Inspect(args[1],args[3]);plan.PsdInput=Path.GetFullPath(args[0]);if(args.Length>=5)plan.MatchPsdArtwork=bool.Parse(args[4]);if(args.Length==6)plan.RelinkPsdTextures=bool.Parse(args[5]);

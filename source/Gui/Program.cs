@@ -26,9 +26,10 @@ public sealed class MainWindow : Form
     private readonly Label status=new(){Text="Choose a compiled model to begin.",AutoSize=true};
     private readonly ProgressBar progress=new(){Dock=DockStyle.Fill,Visible=false,Style=ProgressBarStyle.Continuous};
     private readonly Label progressPercent=new(){Text="0%",AutoSize=true,Visible=false,Anchor=AnchorStyles.Left,Margin=new Padding(10,0,0,0)};
+    private readonly CheckBox inferDeformerNames=new(){Text="Guess deformer names from ArtMeshes (experimental)",Checked=true,AutoSize=true};
     private readonly CheckBox inferLinks=new(){Text="Rebuild linked parameter grids (inferred)",Checked=true,AutoSize=true};
-    private readonly Button selectPsd=new(){Text="Choose optional PSD…",AutoSize=true};
-    private readonly Button clearPsd=new(){Text="No PSD",AutoSize=true};
+    private readonly Button selectPsd=new(){Text="Add PSD files…",AutoSize=true};
+    private readonly Button clearPsd=new(){Text="Clear PSDs",AutoSize=true};
     private readonly Label psdStatus=new(){Text="PSD: none (optional)",AutoSize=true,MaximumSize=new Size(340,0),Margin=new Padding(0,8,0,8)};
     private readonly CheckBox matchPsd=new(){Text="Try preserving PSD layer names using artwork matching (experimental)",Checked=true,Enabled=false,AutoSize=true};
     private readonly CheckBox relinkPsd=new(){Text="Attempt PSD texture relinking (Warning: Experimental)",Checked=false,Enabled=false,AutoSize=true};
@@ -36,7 +37,7 @@ public sealed class MainWindow : Form
     private readonly Button cancel=new(){Text="Cancel",Enabled=false,AutoSize=true};
     private string outputFolder=AppContext.BaseDirectory;
     private CancellationTokenSource? activeConversion;
-    private string? psdPath;
+    private readonly List<string> psdPaths=[];
     private Plan? plan;private bool busy;
     public MainWindow()
     {
@@ -46,7 +47,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.7.3";
+        Text="MOC3 Recovery 1.8";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -122,7 +123,8 @@ public sealed class MainWindow : Form
         progressRow.Controls.Add(progress,0,0);progressRow.Controls.Add(progressPercent,1,0);layout.Controls.Add(progressRow,0,8);
         var reportHeading=new Label(){Text="Recovery report",AutoSize=true,
             Font=new Font("Segoe UI",10,FontStyle.Bold),Margin=new Padding(0,8,0,8)};
-        inferLinks.Margin=new Padding(0,8,0,8);layout.Controls.Add(inferLinks,0,9);
+        inferLinks.Margin=new Padding(0,8,16,8);inferDeformerNames.Margin=new Padding(0,8,0,8);
+        layout.Controls.Add(ButtonRow(inferLinks,inferDeformerNames),0,9);
         layout.Controls.Add(ButtonRow(selectPsd,clearPsd,psdStatus),0,10);
         matchPsd.Margin=new Padding(0,4,0,10);layout.Controls.Add(matchPsd,0,11);
         relinkPsd.Margin=new Padding(0,0,0,10);layout.Controls.Add(relinkPsd,0,12);
@@ -143,11 +145,17 @@ public sealed class MainWindow : Form
         Shown+=(_,_)=>FitLabels();
         ResumeLayout(true);
         selectPsd.Click+=(_,_)=>{
-            using var dialog=new OpenFileDialog(){Title="Choose optional original layered PSD",Filter="Photoshop document (*.psd)|*.psd"};
-            if(dialog.ShowDialog(this)==DialogResult.OK){psdPath=dialog.FileName;psdStatus.Text="PSD: "+Path.GetFileName(psdPath);matchPsd.Checked=true;matchPsd.Enabled=true;relinkPsd.Checked=false;relinkPsd.Enabled=true;}
+            using var dialog=new OpenFileDialog(){Title="Add layered PSD files",Multiselect=true,Filter="Photoshop document (*.psd)|*.psd"};
+            if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+            bool first=psdPaths.Count==0;
+            foreach(var path in dialog.FileNames)
+                if(!psdPaths.Contains(path,StringComparer.OrdinalIgnoreCase))psdPaths.Add(path);
+            psdStatus.Text=psdPaths.Count==1?"PSD: "+Path.GetFileName(psdPaths[0]):$"{psdPaths.Count} PSDs selected";
+            if(first){matchPsd.Checked=true;relinkPsd.Checked=false;}
+            matchPsd.Enabled=true;relinkPsd.Enabled=matchPsd.Checked;
         };
-        matchPsd.CheckedChanged+=(_,_)=>{if(!matchPsd.Checked)relinkPsd.Checked=false;relinkPsd.Enabled=!busy&&psdPath!=null&&matchPsd.Checked;};
-        clearPsd.Click+=(_,_)=>{psdPath=null;psdStatus.Text="PSD: none (optional)";matchPsd.Checked=true;matchPsd.Enabled=false;relinkPsd.Checked=false;relinkPsd.Enabled=false;};
+        matchPsd.CheckedChanged+=(_,_)=>{if(!matchPsd.Checked)relinkPsd.Checked=false;relinkPsd.Enabled=!busy&&psdPaths.Count>0&&matchPsd.Checked;};
+        clearPsd.Click+=(_,_)=>{psdPaths.Clear();psdStatus.Text="PSD: none (optional)";matchPsd.Checked=true;matchPsd.Enabled=false;relinkPsd.Checked=false;relinkPsd.Enabled=false;};
         browse.Click+=(_,_)=>ChooseModel();selectTextures.Click+=(_,_)=>ChooseTextures();clearTextures.Click+=(_,_)=>{if(plan!=null){plan.Textures.Clear();RefreshTextures();}};
         up.Click+=(_,_)=>MoveTexture(-1);down.Click+=(_,_)=>MoveTexture(1);convert.Click+=async(_,_)=>await RunConversion();
         openFolder.Click+=(_,_)=>{if(plan!=null)Process.Start(new ProcessStartInfo("explorer.exe"){ArgumentList={Path.GetDirectoryName(plan.Output)!},UseShellExecute=true});};
@@ -166,7 +174,7 @@ public sealed class MainWindow : Form
         if(dialog.ShowDialog(this)!=DialogResult.OK)return;
         try
         {
-            var next=Recovery.Inspect(dialog.FileName, outputFolder);plan=next;psdPath=null;psdStatus.Text="PSD: none (optional)";matchPsd.Checked=true;matchPsd.Enabled=false;relinkPsd.Checked=false;relinkPsd.Enabled=false;input.Text=next.Input;
+            var next=Recovery.Inspect(dialog.FileName, outputFolder);plan=next;psdPaths.Clear();psdStatus.Text="PSD: none (optional)";matchPsd.Checked=true;matchPsd.Enabled=false;relinkPsd.Checked=false;relinkPsd.Enabled=false;input.Text=next.Input;
             progress.Value=0;progressPercent.Text="0%";progress.Visible=false;progressPercent.Visible=false;
             destination.Text="Output: "+next.Output;RefreshTextures();convert.Enabled=true;openFolder.Enabled=true;
             report.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics and parameter folders will be restored from companion files when available. Other runtime settings are preserved in the recovery ZIP.";
@@ -196,7 +204,8 @@ public sealed class MainWindow : Form
             replace=MessageBox.Show(this,"These output files already exist:\r\n\r\n"+string.Join("\r\n",existing)+"\r\n\r\nReplace them? Existing files will be kept as timestamped .bak files.","Replace existing outputs?",MessageBoxButtons.YesNo,MessageBoxIcon.Question)==DialogResult.Yes;
             if(!replace)return;
         }
-        plan.PsdInput=psdPath;plan.RelinkPsdTextures=psdPath!=null&&relinkPsd.Checked;relinkPsd.Enabled=false;plan.MatchPsdArtwork=psdPath!=null&&matchPsd.Checked;matchPsd.Enabled=false;
+        plan.PsdInputs.Clear();plan.PsdInputs.AddRange(psdPaths);plan.RelinkPsdTextures=psdPaths.Count>0&&relinkPsd.Checked;relinkPsd.Enabled=false;plan.MatchPsdArtwork=psdPaths.Count>0&&matchPsd.Checked;matchPsd.Enabled=false;
+        plan.InferDeformerNames=inferDeformerNames.Checked;inferDeformerNames.Enabled=false;
         plan.InferParameterLinks=inferLinks.Checked;inferLinks.Enabled=false;
         using var cancellation=new CancellationTokenSource();
         activeConversion=cancellation;cancel.Enabled=true;chooseOutput.Enabled=false;
@@ -223,7 +232,7 @@ public sealed class MainWindow : Form
         finally
         {
             activeConversion=null;cancel.Enabled=false;chooseOutput.Enabled=true;
-            inferLinks.Enabled=true;matchPsd.Enabled=psdPath!=null;relinkPsd.Enabled=psdPath!=null&&matchPsd.Checked;busy=false;acceptingProgress=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
+            inferDeformerNames.Enabled=true;inferLinks.Enabled=true;matchPsd.Enabled=psdPaths.Count>0;relinkPsd.Enabled=psdPaths.Count>0&&matchPsd.Checked;busy=false;acceptingProgress=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
             try{Directory.Delete(temp,true);}catch{}
         }
     }

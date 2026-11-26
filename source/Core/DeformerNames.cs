@@ -38,33 +38,64 @@ public static class DeformerNames
         string? Ref(XElement e,string field)=>(string?)e.Descendants("CDeformerGuid").SingleOrDefault(g=>(string?)g.Attribute("xs.n")==field)?.Attribute("xs.ref");
         var sources=doc.Descendants().Where(e=>e.HasElements&&(e.Name=="CWarpDeformerSource"||e.Name=="CRotationDeformerSource")).ToArray();
         var byGuid=sources.ToDictionary(e=>Ref(e,"guid")??throw new InvalidDataException("Deformer GUID missing."));
-        var names=byGuid.Keys.ToDictionary(k=>k,k=>new HashSet<string>(StringComparer.Ordinal));
+        var comparer=StringComparer.OrdinalIgnoreCase;
+        var names=byGuid.Keys.ToDictionary(k=>k,k=>new HashSet<string>(comparer));
+        var directParents=new HashSet<string>();
         foreach(var mesh in doc.Descendants("CArtMeshSource").Where(e=>e.HasElements))
         {
-            string? name=mesh.Descendants("s").SingleOrDefault(e=>(string?)e.Attribute("xs.n")=="localName")?.Value;
-            if(string.IsNullOrWhiteSpace(name))continue;
+            string name=(mesh.Descendants("s").SingleOrDefault(e=>(string?)e.Attribute("xs.n")=="localName")?.Value??"").Trim();
             string? parent=Ref(mesh,"targetDeformerGuid");var visited=new HashSet<string>();
+            if(parent!=null)directParents.Add(parent);
             while(parent!=null&&byGuid.TryGetValue(parent,out var deformer))
             {
                 if(!visited.Add(parent))throw new InvalidDataException("Cycle in deformer hierarchy while deriving display names.");
                 names[parent].Add(name);parent=Ref(deformer,"targetDeformerGuid");
             }
         }
-        var notes=new List<string>();int changed=0,ambiguous=0,empty=0;
+        // Count all plausible owners before assigning labels, including ancestors.
+        // This prevents traversal order from deciding which deformer gets a shared name.
+        var contested=names.Values.Where(set=>set.Count==1).Select(set=>set.Single())
+            .GroupBy(name=>name,comparer).Where(group=>group.Count()>1).Select(group=>group.Key).ToHashSet(comparer);
+        static XElement Label(XElement source)=>source.Descendants("s").Single(e=>(string?)e.Attribute("xs.n")=="localName");
+        static string Id(XElement source)=>(string)source.Descendants("CDeformerId").Single().Attribute("idstr")!;
+        var reserved=sources.SelectMany(source=>new[]{Id(source).Trim(),Label(source).Value.Trim()}).ToHashSet(comparer);
+        var notes=new List<string>();int changed=0;
         foreach(var (guid,source) in byGuid)
         {
-            var candidates=names[guid];string id=(string)source.Descendants("CDeformerId").Single().Attribute("idstr")!;
-            var label=source.Descendants("s").Single(e=>(string?)e.Attribute("xs.n")=="localName");
-            if(candidates.Count==1)
-            {
-                string name=candidates.Single();if(label.Value!=name){label.Value=name;changed++;notes.Add($"INFERRED DEFORMER NAME: {id} → {name} (from controlled ArtMesh names; ID unchanged).");}
-            }
-            else if(candidates.Count>1){ambiguous++;notes.Add($"DEFORMER NAME RETAINED: {id} controls differently named ArtMeshes: "+string.Join(", ",candidates.Order(StringComparer.Ordinal))+".");}
-            else empty++;
+            var candidates=names[guid];string id=Id(source);
+            var label=Label(source);
+            string candidate=candidates.Count==1?candidates.Single():"";
+            string? reason=null;
+            if(label.Value!=id || !Placeholder(id,"Warp","Rotation","Deformer"))
+                reason="already has a descriptive name or ID";
+            else if(candidates.Count>1)reason="controls differently named or unnamed ArtMeshes";
+            else if(!directParents.Contains(guid))reason="no directly controlled ArtMesh";
+            else if(candidate.Length==0 || BroadLabels.Contains(candidate) || Placeholder(candidate,"ArtMesh","Mesh","Layer","Drawable","Object") ||
+                !candidate.Any(char.IsLetter))reason="mesh label is blank or generic";
+            else if(contested.Contains(candidate)||reserved.Contains(candidate))reason="candidate label is shared or already in use: "+candidate;
+            if(reason!=null){notes.Add($"DEFORMER NAME RETAINED: {id} {reason}.");continue;}
+            label.Value=candidate;
+            changed++;
+            notes.Add($"INFERRED DEFORMER NAME: {id} → {candidate} (unique controlled ArtMesh label).");
         }
-        notes.Insert(0,$"Deformer display names derived from ArtMeshes: {changed}; ambiguous: {ambiguous}; without named ArtMeshes: {empty}. IDs are unchanged. Names are inferred, not recovered original labels.");
+        notes.Insert(0,$"Deformer display names derived from ArtMeshes: {changed}; retained: {sources.Length-changed}. Stored IDs are preserved.");
         return notes;
     }
+    // Category-only labels describe a region, not a distinct deformer role.
+    static readonly HashSet<string> BroadLabels=new(StringComparer.OrdinalIgnoreCase)
+        {"face","head","body","hair","model","group","parts","part","artwork","default","unnamed"};
+
+    static bool Placeholder(string value,params string[] prefixes)
+    {
+        foreach(string prefix in prefixes)
+        {
+            if(!value.StartsWith(prefix,StringComparison.OrdinalIgnoreCase))continue;
+            string suffix=value[prefix.Length..].TrimStart(' ','_','-');
+            if(suffix.All(char.IsAsciiDigit))return true;
+        }
+        return false;
+    }
+
     public static string Apply(XDocument doc,string mocPath)
     {
         try

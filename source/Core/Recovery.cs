@@ -14,9 +14,15 @@ public sealed class Plan
     public string Backup => Path.ChangeExtension(Output, ".recovery.zip");
     public List<string> Textures { get; } = [];
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
-    public string? PsdInput { get; set; }
+    public List<string> PsdInputs { get; } = [];
+    public string? PsdInput
+    {
+        get=>PsdInputs.FirstOrDefault();
+        set { PsdInputs.Clear();if(value!=null)PsdInputs.Add(value); }
+    }
     public bool RelinkPsdTextures { get; set; }
     public bool MatchPsdArtwork { get; set; } = true;
+    public bool InferDeformerNames { get; set; } = true;
     public bool InferParameterLinks { get; set; } = true;
     public List<string> Notes { get; } = [];
     public string? DisplayInfo { get; set; }
@@ -176,17 +182,28 @@ public static class Recovery
             var extra=Path.Combine(temp,"editor-import");
             using var recovered=JsonDocument.Parse(File.ReadAllBytes(modelJson));
             var companions=CompanionExporter.Export(plan,recovered.RootElement,extra);
-            PsdImportResult? psdResult=null;
-            if(plan.PsdInput!=null)
-            {
-                SetProgress(30,"Importing optional PSD source artwork… Large layers may take a few minutes.");
-                psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"),plan.MatchPsdArtwork,plan.Textures,Stage,plan.RelinkPsdTextures,p=>SetProgress(30+p*45/100,stage));
-            }
-            SetProgress(76,"Naming deformers from ArtMeshes…");
-            var deformerNames=DeformerNames.NameFromArtMeshes(staged);
-            SetProgress(83,"Recovering runtime blend shapes and individual atlas source images…");
             var projectEntries=CaffArchive.Read(staged);
             var projectXml=XDocument.Load(new MemoryStream(projectEntries["main.xml"]));
+            var psds=plan.PsdInputs.Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            var psdResults=new List<PsdImportResult>();
+            var psdFolder=Path.Combine(extra,"psd-source");
+            PsdBatchMatches? batch=null;
+            if(psds.Length>1)
+                batch=PsdBatchMatches.Scan(psds,plan.MatchPsdArtwork||plan.RelinkPsdTextures,recovered.RootElement,plan.Textures,Stage);
+            for(int i=0;i<psds.Length;i++)
+            {
+                string label=$"PSD {i+1}/{psds.Length} ({Path.GetFileName(psds[i])})";
+                string folder=psds.Length==1?psdFolder:Path.Combine(psdFolder,$"{i+1:D3}");
+                SetProgress(30+45*i/psds.Length,label);
+                var result=PsdImporter.Import(projectXml,projectEntries,psds[i],folder,plan.MatchPsdArtwork,
+                    plan.Textures,message=>Stage(label+" — "+message),plan.RelinkPsdTextures,
+                    p=>SetProgress(30+45*(100*i+p)/(100*psds.Length),stage),batch,i);
+                psdResults.Add(result);
+            }
+            SetProgress(83,"Recovering runtime blend shapes and individual atlas source images…");
+            List<string> deformerNames=plan.InferDeformerNames
+                ? DeformerNames.NameFromArtMeshes(projectXml)
+                : ["Deformer name guesses disabled. Existing display labels retained."];
             var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
             supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,cancellationToken));
             ProjectEnricher.Validate(projectXml);
@@ -196,7 +213,7 @@ public static class Recovery
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.7.3").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.8").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -213,9 +230,12 @@ public static class Recovery
             report.AppendLine("Expression fade previews approximate an isolated transition against defaults. Runtime stacking/animated-base expressions and automatic pose switching are not recreated. Pose snapshots reset other groups to their first choice.");
             foreach(var note in companions.Notes)report.AppendLine(note);
             report.AppendLine().AppendLine("OPTIONAL PSD");
-            if(psdResult==null)report.AppendLine("No PSD selected. Recovery uses MOC3 and available companion files.");
-            else
+            if(batch!=null)foreach(var note in batch.Notes)report.AppendLine(note);
+            if(psds.Length==0)report.AppendLine("No PSD selected. Recovery uses MOC3 and available companion files.");
+            for(int i=0;i<psdResults.Count;i++)
             {
+                var psdResult=psdResults[i];
+                report.AppendLine($"PSD {i+1}/{psds.Length}: {psds[i]}");
                 report.AppendLine($"PSD raster layers: {psdResult.Layers}; source images imported: {psdResult.Imported}; unique name candidates: {psdResult.NameMatches}; accepted artwork-name matches: {psdResult.ArtworkMatches}.");
                 report.AppendLine($"Experimental PSD source texture links restored: {psdResult.RelinkedTextures}; option enabled: {plan.RelinkPsdTextures}. Active atlas rendering is retained. See texture-relinks.json when enabled.");
                 report.AppendLine("PSD source images and names are available in the project. Existing mesh texture links remain on the atlas; name-only candidates are not pixel-verified; optional artwork matches are heuristic and reported separately. Unmatched artwork does not recreate omitted mesh geometry or rigging.");
@@ -244,13 +264,13 @@ public static class Recovery
             report.AppendLine("Original companions remain preserved. Expressions and pose groups additionally produce importable approximations; existing motions are checked and prepared for Editor import. Native controllers and animation scenes are not rebuilt. Physics setups and parameter groups are now imported when their companion data is valid; see counts and warnings above.");
             report.AppendLine("Unreferenced expression JSON files in this folder are included; they may belong to another model if models share a folder.");
             report.AppendLine().AppendLine("NOT RECOVERABLE FROM THESE INPUTS / NOT VERIFIED");
-            report.AppendLine((psdResult==null?"Original PSD layers were not supplied. ":"Supplied PSD artwork is imported separately; it cannot restore omitted rigging. ")+"Removed mesh geometry, editor-only controls, original GUIDs, deformer labels, authoring history and comments are not fully represented by a MOC3. Exact missing rig object names/counts cannot be determined without the original CMO3.");
+            report.AppendLine((psds.Length==0?"Original PSD layers were not supplied. ":"Supplied PSD artwork is imported separately; it cannot restore omitted rigging. ")+"Removed mesh geometry, editor-only controls, original GUIDs, deformer labels, authoring history and comments are not fully represented by a MOC3. Exact missing rig object names/counts cannot be determined without the original CMO3.");
             report.AppendLine("Rig texture links use the recovered atlas pages. Optional PSD source images are imported separately; experimental source relinking results are listed above when enabled. Advanced/version-specific features may not round-trip exactly.");
             report.AppendLine("A valid archive does not prove visual or animated equivalence. Open in Cubism Editor and check the rig before use.");
             SetProgress(88,"Preserving companion files and writing the report…");
             var zip=Path.Combine(temp,"assets.zip");
             var generatedFiles=Directory.GetFiles(extra,"*",SearchOption.AllDirectories);
-            int savedFiles=0,totalFiles=assets.Count+generatedFiles.Length+1+(plan.PsdInput!=null?1:0);
+            int savedFiles=0,totalFiles=assets.Count+generatedFiles.Length+1+psds.Length;
             void SavedFile()=>SetProgress(88+(++savedFiles)*9/Math.Max(1,totalFiles),"Preserving companion files and writing the report…");
             using(var archive=ZipFile.Open(zip,ZipArchiveMode.Create))
             {
@@ -270,7 +290,11 @@ public static class Recovery
                     await AddFile(asset,"original/"+relative.Replace('\\','/'));
                     report.AppendLine("Preserved: "+asset);SavedFile();
                 }
-                if(plan.PsdInput!=null){await AddFile(plan.PsdInput,"original/source-artwork/"+Path.GetFileName(plan.PsdInput));SavedFile();}
+                for(int i=0;i<psds.Length;i++)
+                {
+                    string prefix=psds.Length==1?"":$"{i+1:D3}/";
+                    await AddFile(psds[i],"original/source-artwork/"+prefix+Path.GetFileName(psds[i]));SavedFile();
+                }
                 foreach(var generated in generatedFiles)
                 {await AddFile(generated,"editor-import/"+Path.GetRelativePath(extra,generated).Replace('\\','/'));SavedFile();}
                 await AddFile(modelJson,"recovered/runtime.model.json");SavedFile();

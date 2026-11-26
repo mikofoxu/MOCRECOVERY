@@ -220,7 +220,7 @@ public static class Recovery
             plan.WarningCount = warningCount;
             plan.CompletionSummary = $"Engine and validation warnings: {warningCount}   ·   Atlas mesh crops skipped: {skippedCrops}";
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.9").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.91").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             if (warningCount > 0)
             {
                 report.AppendLine(Plan.WarningHeading);

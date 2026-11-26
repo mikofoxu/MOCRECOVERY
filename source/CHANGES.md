@@ -1,3 +1,7 @@
+# MocRecovery 1.91
+
+- Preserve each warp deformer’s runtime transform mode during recovery. Mixed quad and legacy warps retain their individual settings. The recovery report includes the counts for each mode.
+
 # MocRecovery 1.9
 
 - Write editor model settings alongside recovered physics groups, including the shared root parameter group, model options, effect settings, guides, brush settings and random-pose defaults. Generate transparent placeholder model icons.

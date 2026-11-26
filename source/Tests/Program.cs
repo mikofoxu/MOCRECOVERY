@@ -52,12 +52,30 @@ Check(text.Contains("Stored deformer IDs preserved as IDs and display names: 37"
 var fixture=File.ReadAllBytes(model);int idOffset=System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(fixture.AsSpan(64+11*4,4));
 fixture.AsSpan(idOffset,64).Clear();System.Text.Encoding.UTF8.GetBytes("Head & 耳").CopyTo(fixture,idOffset);
 Check(DeformerNames.ReadIds(fixture)[0]=="Head & 耳","descriptive UTF-8 ID decoded exactly");
+// Exercise mode preservation independently of XML order and rotation rows.
+int Section(int slot)=>BitConverter.ToInt32(fixture, 64 + slot * 4);
+var expectedWarpModes=new Dictionary<string,bool>();
+var fixtureIds=DeformerNames.ReadIds(fixture);
+for(int i=0;i<fixtureIds.Length;i++)
+{
+    if(BitConverter.ToInt32(fixture,Section(17)+4*i)!=0)continue;
+    int warpIndex=BitConverter.ToInt32(fixture,Section(18)+4*i);
+    bool quad=warpIndex%2==0;
+    BitConverter.GetBytes(quad?1:0).CopyTo(fixture,Section(101)+4*warpIndex);
+    expectedWarpModes.Add(fixtureIds[i],quad);
+}
 var fixturePath=Path.Combine(dir,"named-fixture.moc3");File.WriteAllBytes(fixturePath,fixture);
 var rawDoc=System.Xml.Linq.XDocument.Load(new MemoryStream(CaffArchive.Read(Directory.GetFiles(outputDir,"Example.cmo3").Single())["main.xml"]));
 // Restore the backend index markers on a test copy, then verify identity rather than traversal order.
 foreach(var g in rawDoc.Descendants("CDeformerGuid").Where(e=>e.Attribute("xs.id")!=null))
 {int index=System.Array.IndexOf(storedIds,(string?)g.Attribute("note"));if(index>=0)g.SetAttributeValue("note","Deformer"+index);}
 Check(DeformerNames.Apply(rawDoc,fixturePath).Contains(": 37."),"descriptive ID applied through verified index mapping");
+foreach(var warp in rawDoc.Descendants("CWarpDeformerSource").Where(e=>e.HasElements))
+{
+    string id=(string)warp.Descendants("CDeformerId").Single().Attribute("idstr")!;
+    bool actual=(bool)warp.Elements("b").Single(e=>(string?)e.Attribute("xs.n")=="isQuadTransform");
+    Check(actual==expectedWarpModes[id], "warp transform mode preserved for "+id);
+}
 Check(rawDoc.Descendants("CDeformerId").Any(e=>(string?)e.Attribute("idstr")=="Head & 耳"),"descriptive name preserved in XML");
 Check(xml.Descendants("CModelSource").Single(e=>e.HasElements).Elements("i").Single(e=>(string?)e.Attribute("xs.n")=="targetVersionNo").Value=="4020000","Example SDK 4.2 target restored from MOC header");
 Check(text.Contains("compatibility target restored from MOC3: 4.2"),"detected SDK target reported");

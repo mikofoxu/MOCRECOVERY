@@ -100,7 +100,8 @@ public static class DeformerNames
     {
         try
         {
-            var ids=ReadIds(File.ReadAllBytes(mocPath));
+            var bytes=File.ReadAllBytes(mocPath);
+            var ids=ReadIds(bytes);
             var sources=doc.Descendants().Where(e=>e.HasElements&&(e.Name=="CWarpDeformerSource"||e.Name=="CRotationDeformerSource")).ToArray();
             if(sources.Length!=ids.Length)throw new InvalidDataException("Recovered deformer count differs from ID table.");
             var guids=doc.Descendants("CDeformerGuid").Where(e=>e.Attribute("xs.id")!=null).ToDictionary(e=>(string)e.Attribute("xs.id")!,e=>e);
@@ -119,7 +120,27 @@ public static class DeformerNames
                 source.Descendants("s").Single(e=>(string?)e.Attribute("xs.n")=="localName").Value=ids[index];
                 guid.SetAttributeValue("note",ids[index]);
             }
-            return $"Stored deformer IDs preserved as IDs and display names: {ids.Length}. Stored IDs are the initial display labels; the later ArtMesh naming pass may change display labels only.";
+            string warpNote;
+            try
+            {
+                var flags = WarpTransforms.Read(bytes, ids.Length);
+                var fields = new List<(XElement Field, bool Value)>();
+                foreach (var (source, _, index) in changes)
+                {
+                    bool warp = source.Name == "CWarpDeformerSource";
+                    if (warp != flags[index].HasValue)
+                        throw new InvalidDataException("Editor and runtime deformer kinds differ.");
+                    if (warp)
+                        fields.Add((source.Elements("b").Single(e => (string?)e.Attribute("xs.n") == "isQuadTransform"), flags[index]!.Value));
+                }
+                foreach (var (field, value) in fields) field.Value = XmlConvert.ToString(value);
+                warpNote = $"Warp transform modes restored: {fields.Count(f => f.Value)} quad, {fields.Count(f => !f.Value)} legacy.";
+            }
+            catch (Exception e) when (e is InvalidDataException or InvalidOperationException)
+            {
+                warpNote = "WARP TRANSFORM MODES NOT RESTORED: " + e.Message;
+            }
+            return $"Stored deformer IDs preserved as IDs and display names: {ids.Length}. Stored IDs are the initial display labels; the later ArtMesh naming pass may change display labels only. {warpNote}";
         }
         catch(Exception e) when(e is InvalidDataException or OverflowException or DecoderFallbackException or XmlException or InvalidOperationException or KeyNotFoundException)
         {return "DEFORMER IDS NOT RESTORED: "+e.Message+" Generated names retained.";}

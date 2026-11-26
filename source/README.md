@@ -1,4 +1,6 @@
-# MOC3 Recovery for Windows — 1.9
+# MOC3 Recovery for Windows — 1.91
+
+Version 1.91 preserves each warp deformer’s transform mode. See CHANGES-1.91.md.
 
 Version 1.9 includes editor metadata for recovered physics. See CHANGES-1.9.md.
 

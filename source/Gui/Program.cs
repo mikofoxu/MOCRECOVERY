@@ -13,7 +13,7 @@ internal static class Program
 public sealed class MainWindow : Form
 {
     private readonly TextBox input=new(){ReadOnly=true,Dock=DockStyle.Fill};
-    private readonly TextBox destination=new(){ReadOnly=true,Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,BackColor=SystemColors.Control,Text="Output: choose a model first."};
+    private readonly TextBox destination=new(){ReadOnly=true,Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,BackColor=SystemColors.Control,AccessibleName="Output folder"};
     private readonly ListBox textures=new(){Dock=DockStyle.Fill,HorizontalScrollbar=true};
     private readonly TextBox report=new(){Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=true,Dock=DockStyle.Fill,Font=new Font("Consolas",10),BackColor=Color.FromArgb(245,247,250)};
     private readonly Button browse=new(){Text="Choose .moc3…",AutoSize=true};
@@ -32,7 +32,7 @@ public sealed class MainWindow : Form
     private readonly Button clearPsd=new(){Text="Clear PSDs",AutoSize=true};
     private readonly Label psdStatus=new(){Text="PSD: none (optional)",AutoSize=true,MaximumSize=new Size(340,0),Margin=new Padding(0,8,0,8)};
     private readonly CheckBox matchPsd=new(){Text="Try preserving PSD layer names using artwork matching (experimental)",Checked=true,Enabled=false,AutoSize=true};
-    private readonly CheckBox relinkPsd=new(){Text="Attempt PSD texture relinking (Warning: Experimental)",Checked=false,Enabled=false,AutoSize=true};
+    private readonly CheckBox relinkPsd=new(){Text="Attempt PSD texture relinking (experimental)",Checked=false,Enabled=false,AutoSize=true};
     private readonly Button chooseOutput=new(){Text="Choose output folder…",AutoSize=true};
     private readonly Button cancel=new(){Text="Cancel",Enabled=false,AutoSize=true};
     private string outputFolder=AppContext.BaseDirectory;
@@ -47,7 +47,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.8.3";
+        Text="MOC3 Recovery 1.8.4";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -66,22 +66,26 @@ public sealed class MainWindow : Form
             Font=new Font("Segoe UI",18,FontStyle.Bold),AutoSize=true,
             Margin=new Padding(0,0,0,20)};
         layout.Controls.Add(title,0,0);
-        var fileRow=new TableLayoutPanel(){Dock=DockStyle.Fill,AutoSize=true,
-            AutoSizeMode=AutoSizeMode.GrowAndShrink,ColumnCount=2,RowCount=1,
-            Margin=new Padding(0,0,0,12)};
-        fileRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        fileRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        fileRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        input.Dock=DockStyle.None;input.Anchor=AnchorStyles.Left|AnchorStyles.Right;
-        input.Margin=new Padding(0,0,12,0);
-        fileRow.Controls.Add(input,0,0);fileRow.Controls.Add(browse,1,0);
-        layout.Controls.Add(fileRow,0,1);
-        var outputRow=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=2,RowCount=1};
-        outputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        outputRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        destination.Anchor=AnchorStyles.Left|AnchorStyles.Right;
-        outputRow.Controls.Add(destination,0,0);outputRow.Controls.Add(chooseOutput,1,0);
-        layout.Controls.Add(outputRow,0,2);
+        TableLayoutPanel PathRow(Button picker, TextBox path)
+        {
+            var row = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 2, RowCount = 1, Margin = new Padding(0, 0, 0, 12)
+            };
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            row.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            picker.Anchor = AnchorStyles.Left;
+            path.Dock = DockStyle.None;
+            path.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            path.Margin = new Padding(12, 0, 0, 0);
+            row.Controls.Add(picker, 0, 0);
+            row.Controls.Add(path, 1, 0);
+            return row;
+        }
+        layout.Controls.Add(PathRow(browse, input), 0, 1);
+        layout.Controls.Add(PathRow(chooseOutput, destination), 0, 2);
         SetOutputFolder(outputFolder);
         chooseOutput.Click+=(_,_)=>{
             using var picker=new FolderBrowserDialog{InitialDirectory=outputFolder,Description="Choose the folder for recovery outputs",UseDescriptionForTitle=true};
@@ -98,13 +102,13 @@ public sealed class MainWindow : Form
         textures.IntegralHeight=false;textures.Margin=new Padding(0,0,0,8);
         layout.Controls.Add(textures,0,4);
 
-        foreach(var button in new[]{browse,selectTextures,clearTextures,up,down,convert,cancel,openFolder,selectPsd,clearPsd})
+        foreach(var button in new[]{browse,chooseOutput,selectTextures,clearTextures,up,down,convert,cancel,openFolder,selectPsd,clearPsd})
         {
             button.AutoSize=true;button.AutoSizeMode=AutoSizeMode.GrowAndShrink;
             button.Padding=new Padding(12,6,12,6);
             button.Margin=new Padding(0,0,8,8);
         }
-        browse.Margin=Padding.Empty;
+        browse.Margin=chooseOutput.Margin=Padding.Empty;
         FlowLayoutPanel ButtonRow(params Control[] controls)
         {
             var row=new FlowLayoutPanel(){Dock=DockStyle.Fill,AutoSize=true,
@@ -166,7 +170,7 @@ public sealed class MainWindow : Form
     {
         outputFolder=Path.GetFullPath(folder);
         if(plan!=null)plan.Output=Path.Combine(outputFolder,Path.GetFileNameWithoutExtension(plan.Input)+".cmo3");
-        destination.Text="Output: "+(plan?.Output??outputFolder);
+        destination.Text=outputFolder;
     }
     private void ChooseModel()
     {
@@ -176,7 +180,7 @@ public sealed class MainWindow : Form
         {
             var next=Recovery.Inspect(dialog.FileName, outputFolder);plan=next;psdPaths.Clear();psdStatus.Text="PSD: none (optional)";matchPsd.Checked=true;matchPsd.Enabled=false;relinkPsd.Checked=false;relinkPsd.Enabled=false;input.Text=next.Input;
             progress.Value=0;progressPercent.Text="0%";progress.Visible=false;progressPercent.Visible=false;
-            destination.Text="Output: "+next.Output;RefreshTextures();convert.Enabled=true;openFolder.Enabled=true;
+            RefreshTextures();convert.Enabled=true;openFolder.Enabled=true;
             report.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics and parameter folders will be restored from companion files when available. Other runtime settings are preserved in the recovery ZIP.";
             status.Text="Ready to create "+Path.GetFileName(next.Output)+".";
         }

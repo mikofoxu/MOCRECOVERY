@@ -1,4 +1,6 @@
-# MOC3 Recovery for Windows — 1.8.4
+# MOC3 Recovery for Windows — 1.8.5
+
+Version 1.8.5 groups recovery options into two columns and adds a PSD list and scrollable report with copying. See CHANGES-1.8.5.md.
 
 Version 1.8.4 aligns the file and folder buttons on the left and displays their paths on the right. See CHANGES-1.8.4.md.
 

@@ -55,8 +55,9 @@ internal static class RuntimeArtwork
         return(png,left,top,w,bottom-top);
     }
 
-    internal static List<string> Apply(XDocument doc,Dictionary<string,byte[]> entries,JsonElement model,IReadOnlyList<string> pages,string folder,Action<string> stage,CancellationToken token=default)
+    internal static List<string> Apply(XDocument doc,Dictionary<string,byte[]> entries,JsonElement model,IReadOnlyList<string> pages,string folder,Action<string> stage,out int skippedCrops,CancellationToken token=default)
     {
+        skippedCrops = 0;
         Directory.CreateDirectory(folder);
         var shared=doc.Root!.Element("shared")!;
         var objects=doc.Descendants().Where(e=>e.Attribute("xs.id")!=null).ToDictionary(e=>(string)e.Attribute("xs.id")!);
@@ -69,11 +70,11 @@ internal static class RuntimeArtwork
         foreach(var group in model.GetProperty("art_meshes").EnumerateArray().GroupBy(m=>m.GetProperty("texture_index").GetInt32()))
         {
             int page=group.Key;
-            if(page>=pages.Count||!File.Exists(pages[page])){notes.Add($"Atlas page {page} missing; skipped {group.Count()} mesh crops.");continue;}
+            if(page>=pages.Count||!File.Exists(pages[page])){skippedCrops += group.Count();notes.Add($"Atlas page {page} missing; skipped {group.Count()} mesh crops.");continue;}
             using var raw=new FileStream(Path.Combine(folder,Guid.NewGuid()+".tmp"),FileMode.CreateNew,FileAccess.ReadWrite,FileShare.None,65536,FileOptions.DeleteOnClose);
             byte[] png=File.ReadAllBytes(pages[page]);int width,height;
             try{(width,height)=PngRows.Size(png);PngRows.Read(png,(_,row)=>{token.ThrowIfCancellationRequested();raw.Write(row); });}
-            catch(InvalidDataException e){notes.Add($"Atlas page {page} skipped: {e.Message}");continue;}
+            catch(InvalidDataException e){skippedCrops += group.Count();notes.Add($"Atlas page {page} skipped: {e.Message}");continue;}
             foreach(var mesh in group)
             {
                 string id=mesh.GetProperty("id").GetString()!;
@@ -83,7 +84,7 @@ internal static class RuntimeArtwork
                 if(!atlasImages.Contains(previous)){psd++;inventory.Add(new{id,page,source="existing source image"});continue;}
                 stage("Extracting atlas artwork: "+id);
                 var crop=Crop(mesh,raw,width,height,token);
-                if(crop==null){notes.Add($"Atlas crop skipped for {id}: no covered texels.");continue;}
+                if(crop==null){skippedCrops++;notes.Add($"Atlas crop skipped for {id}: no covered texels.");continue;}
                 var (data,x,y,w,h)=crop.Value;string file=$"atlas-mesh-{created:D4}.png";
                 var template=images[previous];var layerTemplate=objects[Ref(template.Descendants("CLayer").Single())];
                 var layer=new XElement(layerTemplate);var resource=new XElement(objects[Ref(F(layer,"imageResource"))]);

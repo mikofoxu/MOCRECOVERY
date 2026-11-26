@@ -8,6 +8,9 @@ using System.Text.RegularExpressions;
 namespace MocRecovery;
 public sealed class Plan
 {
+    public const string WarningHeading = "ENGINE AND VALIDATION WARNINGS";
+    public int WarningCount { get; internal set; }
+    public string CompletionSummary { get; internal set; } = "";
     public required string Input { get; init; }
     public required string Output { get; set; }
     public string Report => Path.Combine(Path.GetDirectoryName(Output)!, "Output.recovery.txt");
@@ -205,15 +208,25 @@ public static class Recovery
                 ? DeformerNames.NameFromArtMeshes(projectXml)
                 : ["Deformer name guesses disabled. Existing display labels retained."];
             var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
-            supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,cancellationToken));
+            supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,out int skippedCrops,cancellationToken));
             ProjectEnricher.Validate(projectXml);
             using(var xmlBytes=new MemoryStream()){projectXml.Save(xmlBytes);projectEntries["main.xml"]=xmlBytes.ToArray();}
             CaffArchive.Write(staged,projectEntries);
             SetProgress(86,"Validating recovered project…");
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
+            int warningCount = validation.Warnings.Count + s.GetProperty("warnings").GetArrayLength();
+            plan.WarningCount = warningCount;
+            plan.CompletionSummary = $"Engine and validation warnings: {warningCount}   ·   Atlas mesh crops skipped: {skippedCrops}";
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.8.4").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.8.5").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            if (warningCount > 0)
+            {
+                report.AppendLine(Plan.WarningHeading);
+                foreach (var note in validation.Warnings) report.AppendLine("REVIEW: " + note);
+                foreach (var warning in s.GetProperty("warnings").EnumerateArray()) report.AppendLine(warning.GetString());
+                report.AppendLine();
+            }
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -245,7 +258,6 @@ public static class Recovery
             report.AppendLine($"Checked {validation.Meshes} meshes, {validation.Keyforms} mesh keyforms and {validation.Samples} local interpolation samples against emitted Editor data. No checked-data mismatches.");
             report.AppendLine($"Checked {validation.Rig?.Deformers} deformers, {validation.Rig?.Keyforms} deformer keyforms and {validation.Rig?.Samples} deformer local samples. Physics setups compared field-by-field with companion: {validation.PhysicsSetupsCompared}.");
             report.AppendLine("Also checked UVs, triangles, clipping references/flags, culling, draw order, opacity, and physics numeric/range/particle references.");
-            foreach(var note in validation.Warnings)report.AppendLine("REVIEW: "+note);
             report.AppendLine("Not verified: world-space deformer evaluation, rendered clipping/compositing, physics simulation, or every parameter combination. Import editor-import/validation/parameter-sweep.motion3.json and parameter-pairs.motion3.json (when co-bound pairs exist) to review single and simultaneous movement visually. Pair schedule JSON identifies each segment; at most 64 pairs are included.");
             foreach(var note in deformerNames)report.AppendLine(note);
             int required=s.GetProperty("requiredTextures").GetInt32();
@@ -254,7 +266,6 @@ public static class Recovery
             foreach(var note in plan.Notes)report.AppendLine("Initial discovery: "+note);
             foreach(var t in missing)report.AppendLine("MISSING TEXTURE (transparent placeholder): "+t);
             for(int i=plan.Textures.Count;i<required;i++)report.AppendLine($"MISSING TEXTURE PAGE {i}: transparent placeholder; artwork cannot be recovered from MOC3.");
-            foreach(var warning in s.GetProperty("warnings").EnumerateArray())report.AppendLine(warning.GetString());
             foreach(var suffix in new[]{".physics3.json",".exp3.json",".motion3.json",".pose3.json",".userdata3.json"})
                 if(!assets.Any(f=>f.EndsWith(suffix,StringComparison.OrdinalIgnoreCase)))
                     report.AppendLine("NOT PROVIDED: "+suffix+" — no matching companion data found; it may never have existed for this model.");

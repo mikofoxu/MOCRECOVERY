@@ -1,6 +1,6 @@
-# RedFoxGirl comparison and recovery changes — 1.1.0
+# Example comparison and recovery changes — 1.1.0
 
-Reference: RedFoxGirl(1).cmo3 (original). Baseline: RedFoxGirl(2).cmo3 (recovered).
+Reference: Example(1).cmo3 (original). Baseline: Example(2).cmo3 (recovered).
 Both supplied archives were decoded and their serialized object data compared. Version 1.1.0 was then tested by regenerating a project from the earlier supplied runtime export and companion JSONs; the original project was used only for verification.
 
 | Item | Original | Supplied recovery | Version 1.1.0 output |
@@ -50,30 +50,30 @@ The Windows EXE and generated model still need manual opening in Windows/Cubism 
 
 ## 1.2.0 linked control update
 
-Optional inference sets the editor combined flag for adjacent parameters with shared two-axis bindings. RedFoxGirl produces 12 pairs (11 reference pairs plus Body X/Y). Inference is reported explicitly; it does not recover original UI choices exactly. Tests verify the disabled option, unchanged runtime JSON, native physics/folders, output paths and failed-conversion protection. Windows/Cubism visual validation was not performed.
+Optional inference sets the editor combined flag for adjacent parameters with shared two-axis bindings. Example produces 12 pairs (11 reference pairs plus Body X/Y). Inference is reported explicitly; it does not recover original UI choices exactly. Tests verify the disabled option, unchanged runtime JSON, native physics/folders, output paths and failed-conversion protection. Windows/Cubism visual validation was not performed.
 
 
 ## Version 1.3.0
-RedFoxGirl: 6 expression snapshots, 38 meshes, 315 mesh keyforms, 399 local interpolation samples, zero checked-data mismatches, 9 winding warnings requiring visual review. Motion and pose conversion were tested with synthetic fixtures because this sample pack does not supply them. See README for scope and limits.
+Example: 6 expression snapshots, 38 meshes, 315 mesh keyforms, 399 local interpolation samples, zero checked-data mismatches, 9 winding warnings requiring visual review. Motion and pose conversion were tested with synthetic fixtures because this sample pack does not supply them. See README for scope and limits.
 
 
 ## Version 1.4.0
-Optional PSD import adds source images without changing atlas rig links. RedFoxGirl PSD: 35 raster layers, 29 unique name candidates, two ambiguous fronthair names and four unmatched layer names. Exact raw pixel equality against an independent PSD reader; embedded ICC profile preserved. Existing rig validation remains at 38 meshes, 315 keyforms and 399 local samples. Windows/Cubism source-image display still requires user testing.
+Optional PSD import adds source images without changing atlas rig links. Example PSD: 35 raster layers, 29 unique name candidates, two ambiguous fronthair names and four unmatched layer names. Exact raw pixel equality against an independent PSD reader; embedded ICC profile preserved. Existing rig validation remains at 38 meshes, 315 keyforms and 399 local samples. Windows/Cubism source-image display still requires user testing.
 
 
 ## Version 1.4.1
-RedFoxGirl MOC3 header version 4 maps to SDK/Cubism 4.2. The recovered targetVersionNo is 4020000, matching the original reference. Header mappings and rejection of unknown versions were checked, and the recovery regression suite passed. No original project is required at runtime. Windows dropdown display remains to be visually confirmed.
+Example MOC3 header version 4 maps to SDK/Cubism 4.2. The recovered targetVersionNo is 4020000, matching the original reference. Header mappings and rejection of unknown versions were checked, and the recovery regression suite passed. No original project is required at runtime. Windows dropdown display remains to be visually confirmed.
 
 
 ## Version 1.4.2
-All 37 stored RedFoxGirl deformer IDs are now preserved as IDs and display labels. Descriptive UTF-8 and XML-special-character identifiers were also tested. Existing SDK-target and recovery regression checks passed. Friendly names absent from the compiled file remain unavailable.
+All 37 stored Example deformer IDs are now preserved as IDs and display labels. Descriptive UTF-8 and XML-special-character identifiers were also tested. Existing SDK-target and recovery regression checks passed. Friendly names absent from the compiled file remain unavailable.
 
 
 ## Version 1.4.3
-ArtMesh-derived naming changes only deformer display labels. RedFoxGirl: 14 labels derived, 23 ambiguous labels retained; all 37 IDs unchanged. Warp21 displays as tail. Tests verify unchanged non-name XML data and existing recovery checks.
+ArtMesh-derived naming changes only deformer display labels. Example: 14 labels derived, 23 ambiguous labels retained; all 37 IDs unchanged. Warp21 displays as tail. Tests verify unchanged non-name XML data and existing recovery checks.
 
 ## Version 1.4.4
-Replaced full-raster PSD allocations with row decoding and chunked PNG encoding. CAFF reads/writes no longer allocate full archive copies. Full recovery and PSD integration checks pass; all 35 RedFoxGirl PSD layers have identical decompressed scanlines, dimensions and ICC metadata versus v1.4.3, and all PNG CRCs validate.
+Replaced full-raster PSD allocations with row decoding and chunked PNG encoding. CAFF reads/writes no longer allocate full archive copies. Full recovery and PSD integration checks pass; all 35 Example PSD layers have identical decompressed scanlines, dimensions and ICC metadata versus v1.4.3, and all PNG CRCs validate.
 
 Measured Linux .NET 10 process peak RSS for all-layer PSD extraction: v1.4.3 3,619,140 KiB; v1.4.4 192,236 KiB (94.7% lower). Full v1.4.4 recovery with the supplied PSD: 513,848 KiB. These are test measurements, not Windows memory guarantees. The user's exact Windows OutOfMemoryException was not reproduced; the high-allocation paths were eliminated and failure reports now include stage and stack trace. Windows GUI and Cubism visual testing remain for the user.
 
@@ -81,10 +81,10 @@ Measured Linux .NET 10 process peak RSS for all-layer PSD extraction: v1.4.3 3,6
 38 meshes / 315 keyforms / 829 mesh samples; 37 deformers / 206 keyforms / 837 deformer samples; 12 physics setups compared with companion fields. Zero checked-data mismatches; nine winding warnings remain. Corruption, companion-conversion and optional-PSD integration tests pass. See CHANGES-1.5.0.md for full scope and limitations. Windows/Cubism visual testing remains outstanding.
 
 ## Version 1.5.1
-PSD artwork matching is checked by default when a PSD is selected. RedFoxGirl: 25 accepted, 3 ambiguous and 10 insufficiently close matches; ArtMesh resolves to mad sign and duplicate hair remains ambiguous. Both checkbox states, matching unit checks and recovery regression checks pass. Enabled PSD recovery peaked at 472,400 KiB RSS in Linux. IDs and atlas links remain unchanged. Windows UI/Cubism visual testing is pending. See CHANGES-1.5.1.md.
+PSD artwork matching is checked by default when a PSD is selected. Example: 25 accepted, 3 ambiguous and 10 insufficiently close matches; ArtMesh resolves to mad sign and duplicate hair remains ambiguous. Both checkbox states, matching unit checks and recovery regression checks pass. Enabled PSD recovery peaked at 472,400 KiB RSS in Linux. IDs and atlas links remain unchanged. Windows UI/Cubism visual testing is pending. See CHANGES-1.5.1.md.
 
 ## Version 1.6.0
-Experimental PSD source texture relinking restores 8 RedFoxGirl source links; 30 meshes are skipped with reasons. Full-resolution held-out pixel samples and canvas-fit checks gate each write. Geometry, UVs, IDs and active atlas inputs remain unchanged. Enabled/disabled integration, four rotations, transform composition, rejected-candidate non-mutation and recovery regression checks pass. Windows/Cubism visual and source-update testing remains outstanding. See CHANGES-1.6.0.md.
+Experimental PSD source texture relinking restores 8 Example source links; 30 meshes are skipped with reasons. Full-resolution held-out pixel samples and canvas-fit checks gate each write. Geometry, UVs, IDs and active atlas inputs remain unchanged. Enabled/disabled integration, four rotations, transform composition, rejected-candidate non-mutation and recovery regression checks pass. Windows/Cubism visual and source-update testing remains outstanding. See CHANGES-1.6.0.md.
 
 ## Version 1.6.1
 Determinate percentage progress added. Integration checks verify 0–100 monotonicity, 100 only after committed outputs, no 100 on failure, intermediate ZIP progress and PSD-layer increments. Existing recovery and PSD checks pass. Percentage is stage-based, not a time estimate. Windows visual testing remains outstanding.

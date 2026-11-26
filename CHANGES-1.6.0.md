@@ -27,7 +27,7 @@ The on-screen recovery report lists linked counts and a reason for every skipped
 ## Validation
 Synthetic tests cover all four quarter-turn rotations, source/canvas transform composition, full-resolution bilinear pixel sampling, reference changes, and unchanged active atlas/geometry/UVs. They reject altered non-affine geometry, unsupported layer effects and unrelated atlas artwork without mutating source references or transforms. Relinking defaults off in the core plan.
 
-RedFoxGirl test result: 8 source links restored from 25 accepted artwork-name candidates; 30 meshes skipped (13 without a unique artwork match, 15 failing the held-out pixel check, 1 with unsupported layer properties, 1 with excessive atlas-to-canvas fit error).
+Example test result: 8 source links restored from 25 accepted artwork-name candidates; 30 meshes skipped (13 without a unique artwork match, 15 failing the held-out pixel check, 1 with unsupported layer properties, 1 with excessive atlas-to-canvas fit error).
 Restored: ArtMesh (mad sign), depressed, nose, blush, face, pupilright, pupilleft, legleft.
 Existing recovery regression tests pass. Enabled/disabled PSD integration tests check actual source-reference targets and unchanged active atlas inputs.
 Windows/Cubism visual validation remains outstanding; user testing is necessary before relying on source updates or atlas regeneration. No Live2D SDK/Core dependency was added.

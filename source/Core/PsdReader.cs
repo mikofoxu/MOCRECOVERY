@@ -138,7 +138,7 @@ public sealed class PsdReader : IDisposable
         public override void Flush(){}public override long Seek(long o,SeekOrigin s)=>throw new NotSupportedException();public override void SetLength(long v)=>throw new NotSupportedException();public override void Write(byte[] b,int o,int n)=>throw new NotSupportedException();
     }
     public static byte[] EncodePng(int width,int height,byte[] rgba,byte[]? profile=null)=>EncodeRows(width,height,(y,row)=>rgba.AsSpan(y*width*4,width*4).CopyTo(row),profile);
-    static byte[] EncodeRows(int width,int height,Action<int,byte[]> fill,byte[]? profile)
+    internal static byte[] EncodeRows(int width,int height,Action<int,byte[]> fill,byte[]? profile)
     {
         using var output=new MemoryStream();output.Write(new byte[]{137,80,78,71,13,10,26,10});
         void Chunk(string tag,byte[] data,int count)

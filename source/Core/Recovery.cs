@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Xml.Linq;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
@@ -171,11 +172,19 @@ public static class Recovery
             }
             SetProgress(76,"Naming deformers from ArtMeshes…");
             var deformerNames=DeformerNames.NameFromArtMeshes(staged);
-            SetProgress(80,"Validating recovered project…");
+            SetProgress(83,"Recovering runtime blend shapes and individual atlas source images…");
+            var projectEntries=CaffArchive.Read(staged);
+            var projectXml=XDocument.Load(new MemoryStream(projectEntries["main.xml"]));
+            var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
+            supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage));
+            ProjectEnricher.Validate(projectXml);
+            using(var xmlBytes=new MemoryStream()){projectXml.Save(xmlBytes);projectEntries["main.xml"]=xmlBytes.ToArray();}
+            CaffArchive.Write(staged,projectEntries);
+            SetProgress(86,"Validating recovered project…");
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.6.2").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.7.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -184,7 +193,7 @@ public static class Recovery
             report.AppendLine("Native parameter folders restored (excluding root): "+enrichment.ParameterGroups);
             report.AppendLine("Inferred linked parameter pairs: "+enrichment.LinkedPairs.Count+(plan.InferParameterLinks?"":" (option disabled)"));
             foreach(var pair in enrichment.LinkedPairs)report.AppendLine("INFERRED LINK: "+pair);
-            foreach(var note in enrichment.Notes)report.AppendLine(note);
+            foreach(var note in enrichment.Notes.Concat(supplemental))report.AppendLine(note);
             report.AppendLine().AppendLine("EDITOR IMPORT PACKAGE (inside recovery ZIP: editor-import/)");
             report.AppendLine($"Expression snapshots: {companions.Expressions}; import-ready motions: {companions.Motions}; pose visibility previews: {companions.Poses}.");
             report.AppendLine("Extract the ZIP. Add the recovered CMO3 to an animation scene, right-click its model track, choose Import Motion. Read editor-import/README.txt first.");

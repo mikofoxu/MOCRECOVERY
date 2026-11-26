@@ -1,8 +1,14 @@
-# MOC3 Recovery for Windows — 1.6.2
+# MOC3 Recovery for Windows — 1.7.0
 
-Version 1.6.2 (includes the responsible-use notice and PSD limitations).
+Version 1.7.0 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
+
+## Runtime artwork and blend shapes in 1.7.0
+
+Conversion reads the selected MOC3, its runtime companions and any selected PSD. The original editor project is never an input. Each mesh with a supported atlas page gets a cropped, triangle-masked source image unless it already has a verified PSD source link. The recovery ZIP includes individual PNGs and their mesh IDs and atlas bounds under `editor-import/atlas-artwork/`. Crops follow the atlas orientation. PNG extraction currently supports non-interlaced 8-bit RGB and RGBA pages. Missing or unsupported pages are reported.
+
+Cubism 4.2+ blend-shape parameter types are restored. Unconstrained warp position targets with one ordinary editing base are reconstructed from the runtime offsets and key values. The report identifies skipped constrained bindings, multi-base warps and other target types. This release focuses on warp geometry and opacity. Blend-shape color animation, hand-authored deformation paths and hidden objects omitted from the runtime require additional data.
 
 ## Run
 
@@ -46,7 +52,7 @@ Source code is included under `source`. The program does not include the user's 
 
 - Windows x64 EXE published self-contained from Linux.
 - Windows engine PE imports inspected: Windows system DLLs only.
-- Shared C# workflow exercised end-to-end on Linux using the same Rust engine source with the RedFoxGirl export.
+- Shared C# workflow exercised end-to-end on Linux using the same Rust engine source with the Example export.
 - Confirmed 49 parameters, 37 deformers, 38 meshes and 50 CDI parameter/part names.
 - Original/recovered comparison: all 38 mesh triangle arrays and 315 position arrays match by parameter key combination.
 - Version 1.1.0 adds 12 native physics setups (26 inputs, 12 outputs, 44 particles), plus the expression parameter folder and root group. All 626 compared physics fields match the original within 0.00001; maximum observed rounding difference: 0.000002. Folder names and memberships match.
@@ -66,7 +72,7 @@ Copy-Item engine/target/release/moc-recover.exe engine/moc-recover.exe -Force
 dotnet publish Gui/MocRecovery.csproj -c Release -r win-x64 --self-contained true -o ../publish
 ```
 
-The C# test console takes a folder containing the RedFoxGirl runtime export, the native engine path and an EMPTY test output directory. The test program includes a Linux-specific failing-process fixture (`/bin/false`); replace it with a suitable failing executable to run that check on Windows.
+The C# test console takes a folder containing the Example runtime export, the native engine path and an EMPTY test output directory. The test program includes a Linux-specific failing-process fixture (`/bin/false`); replace it with a suitable failing executable to run that check on Windows.
 
 ## Attribution
 
@@ -84,7 +90,7 @@ The .NET runtime and third-party dependencies retain their own licenses. See the
 - Added XML reference validation and report counts for native imports. Invalid physics setups are skipped individually with an explicit warning; invalid group hierarchies are reported.
 - Preserved the 1.0.1 spacing/DPI fix and same-basename output behavior.
 
-Keep the original runtime companion files alongside the MOC3. The new importer does not copy rig data from an original CMO3 and requires no original project at runtime. No RedFoxGirl IDs or settings are hard-coded into the importer.
+Keep the original runtime companion files alongside the MOC3. The new importer does not copy rig data from an original CMO3 and requires no original project at runtime. No Example IDs or settings are hard-coded into the importer.
 
 See COMPARISON.md for remaining differences. Neither Windows GUI execution nor a Cubism Editor open/re-export test has been performed in this environment. Numeric/static matches do not establish complete animated equivalence. Deformer keyform coordinates, interpolation behavior, editor extensions and layer layouts have not all been proven equivalent.
 
@@ -96,7 +102,7 @@ All generated files are saved beside MocRecovery.exe, using the input basename. 
 
 Adds an optional, enabled-by-default reconstruction of two-slider grids. Only adjacent parameters in the same group with a shared two-axis keyform binding are linked. The report lists every inferred pair. Original editor linking choices are not preserved in MOC3, so links can differ from the original. No original CMO3 is read by this feature.
 
-For RedFoxGirl, 12 pairs are inferred: the 11 identified in the reference project plus Body X/Y. Disable the checkbox to leave individual sliders. Recovery tests pass with the option on and off, including unchanged runtime geometry/bindings and output placement beside the executable. The Windows executable cross-build succeeds; visual behavior in Windows/Cubism still needs confirmation.
+For Example, 12 pairs are inferred: the 11 identified in the reference project plus Body X/Y. Disable the checkbox to leave individual sliders. Recovery tests pass with the option on and off, including unchanged runtime geometry/bindings and output placement beside the executable. The Windows executable cross-build succeeds; visual behavior in Windows/Cubism still needs confirmation.
 
 ## Version 1.3.0 — companion import and validation
 
@@ -115,7 +121,7 @@ Priority 2: Validation
 
 This is not an independent Cubism Core renderer or physics simulator. World-space deformer behavior, rendered clipping/compositing, dynamic physics and all parameter combinations are not verified. Windows/Cubism visual import testing remains outstanding. No original CMO3 is needed. Artwork extraction is deferred.
 
-Validation evidence: RedFoxGirl produced six expression snapshots; no motion/pose files were supplied for that model. Checked 38 meshes, 315 mesh keyforms and 399 local samples without data mismatches. Nine mesh winding warnings were reported for review, not treated as proven defects. Synthetic fixtures test all expression blend modes, all four motion segment types, linked pose choices, malformed motion handling, and detection of altered clipping/draw order. Existing recovery/output-folder regression checks also passed.
+Validation evidence: Example produced six expression snapshots; no motion/pose files were supplied for that model. Checked 38 meshes, 315 mesh keyforms and 399 local samples without data mismatches. Nine mesh winding warnings were reported for review, not treated as proven defects. Synthetic fixtures test all expression blend modes, all four motion segment types, linked pose choices, malformed motion handling, and detection of altered clipping/draw order. Existing recovery/output-folder regression checks also passed.
 
 Official motion import instructions: https://docs.live2d.com/en/cubism-editor-manual/export-moc3-motion3-files/
 
@@ -131,11 +137,11 @@ Matching is conservative: unique name candidates restore mesh display labels onl
 
 A PSD supplies artwork and layer metadata. It does **not** supply Live2D deformer names or IDs, mesh vertices/triangles, parameter bindings, deformation keyforms, or rigging. Importing a PSD therefore cannot restore those items when they are missing from the compiled model and companion files. For example, a mouth layer can restore the mouth artwork, but not an omitted mouth mesh or its animation setup.
 
-Deformer IDs and friendly display names are different. Our RedFoxGirl investigation found original IDs such as `Warp29` and `Rotation` in the MOC3, but did not find the friendly labels `wholebody` and `HeadRotation`. Version 1.4.3 preserves stored deformer IDs; display names are derived from controlled ArtMeshes when unambiguous. This does not restore separate friendly labels absent from the MOC3. The PSD does not fill this gap. Any names inferred from artwork or affected parameters would be suggestions, not recovered original deformer names.
+Deformer IDs and friendly display names are different. Our Example investigation found original IDs such as `Warp29` and `Rotation` in the MOC3, but did not find the friendly labels `wholebody` and `HeadRotation`. Version 1.4.3 preserves stored deformer IDs; display names are derived from controlled ArtMeshes when unambiguous. This does not restore separate friendly labels absent from the MOC3. The PSD does not fill this gap. Any names inferred from artwork or affected parameters would be suggestions, not recovered original deformer names.
 
 Supported: standard 8-bit RGB PSD; raw, PackBits/RLE, ZIP and ZIP prediction channel compression. PSB, 16-/32-bit and other color modes are not supported. Raster layer masks, vector masks, effects and non-normal blend appearance are not reconstructed; warnings identify detected cases. Smart objects use their stored raster previews. Original PSD bytes preserve those features for manual work. Very large layers may require substantial memory; individual layers above 180 million pixels are reported as unsupported. If a selected PSD is invalid, conversion reports the error; clear the PSD selection to run without it.
 
-RedFoxGirl verification: 35 raster layers imported; raw RGBA matched an independent PSD reader on all layers. ICC profile preservation checked. There were 29 unique name candidates, two ambiguous fronthair layers, and four unmatched names (Layer 1, Layer 4, mouth, mad sign). These are name candidates, not pixel-verified mesh associations. All 38 rig meshes, 315 keyforms and 399 local interpolation samples continued to pass validation. No-PSD regression tests passed. Synthetic PSD tests cover nested groups, Unicode names, negative offsets, raw and ZIP prediction channels.
+Example verification: 35 raster layers imported; raw RGBA matched an independent PSD reader on all layers. ICC profile preservation checked. There were 29 unique name candidates, two ambiguous fronthair layers, and four unmatched names (Layer 1, Layer 4, mouth, mad sign). These are name candidates, not pixel-verified mesh associations. All 38 rig meshes, 315 keyforms and 399 local interpolation samples continued to pass validation. No-PSD regression tests passed. Synthetic PSD tests cover nested groups, Unicode names, negative offsets, raw and ZIP prediction channels.
 
 The native source-image group still needs visual confirmation in Windows/Cubism. This is the main item to test before relying on the imported source-artwork workflow.
 
@@ -145,13 +151,13 @@ Optional PSD tests: `dotnet run --project source/PsdTests/Psd.Tests.csproj -c Re
 
 The recovered project target is now selected from the MOC3 header instead of retaining the backend’s fixed 3.0 setting. Supported header mappings are Cubism 3.0, 3.3, 4.0, 4.2, 5.0 and 5.3. Unknown versions are rejected rather than guessed. The detected target is listed in the recovery report.
 
-RedFoxGirl’s header identifies 4.2; its recovered targetVersionNo is now 4020000, matching the reference project. No original CMO3 is needed during conversion. This identifies compiled-format compatibility, not the original Editor build, and does not guarantee full recovery of every version-specific feature. The Windows/Cubism dropdown still needs visual confirmation.
+Example’s header identifies 4.2; its recovered targetVersionNo is now 4020000, matching the reference project. No original CMO3 is needed during conversion. This identifies compiled-format compatibility, not the original Editor build, and does not guarantee full recovery of every version-specific feature. The Windows/Cubism dropdown still needs visual confirmation.
 
 ## Version 1.4.2 — preserve stored deformer IDs
 
 Reads the MOC3 deformer ID table and preserves those IDs as both deformer IDs and display names. Descriptive stored IDs remain descriptive; generic stored IDs such as Warp29 remain unchanged instead of being renumbered. No original CMO3 or PSD is required. This does not infer missing friendly names.
 
-The mapping uses the backend’s explicit deformer indices, not name similarity or hierarchy guesses. Invalid, empty, duplicate or unsupported ID data is reported and generated names are retained. Both endianness flags are handled. RedFoxGirl’s 37 IDs and a descriptive UTF-8/special-character test passed, along with the recovery regression suite. Windows/Cubism visual confirmation remains outstanding.
+The mapping uses the backend’s explicit deformer indices, not name similarity or hierarchy guesses. Invalid, empty, duplicate or unsupported ID data is reported and generated names are retained. Both endianness flags are handled. Example’s 37 IDs and a descriptive UTF-8/special-character test passed, along with the recovery regression suite. Windows/Cubism visual confirmation remains outstanding.
 
 ## Version 1.4.3 — ArtMesh-based deformer display names
 

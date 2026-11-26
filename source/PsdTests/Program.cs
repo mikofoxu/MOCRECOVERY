@@ -25,7 +25,7 @@ Check(zip.Entries.Any(e=>e.FullName.StartsWith("original/source-artwork/")),"ori
 Check(zip.GetEntry("editor-import/psd-source/layers.json")!=null,"layer inventory exported");
 var matching=zip.GetEntry("editor-import/psd-source/artwork-matches.json");
 Check((matching!=null)==plan.MatchPsdArtwork,"artwork matching option controls analysis output");
-if(plan.MatchPsdArtwork&&Path.GetFileNameWithoutExtension(args[1])=="RedFoxGirl")
+if(plan.MatchPsdArtwork&&Path.GetFileNameWithoutExtension(args[1])=="Example")
 {
  using var data=JsonDocument.Parse(matching!.Open());var matches=data.RootElement.GetProperty("matches").EnumerateArray().ToArray();
  Check(matches.Single(m=>m.GetProperty("MeshId").GetString()=="ArtMesh").GetProperty("LayerName").GetString()=="mad sign","real PSD resolves ArtMesh to mad sign");
@@ -55,7 +55,7 @@ foreach(var mesh in xml.Descendants("CArtMeshSource").Where(e=>e.HasElements))
   var resource=objects[(string)image.Elements("CImageResource").Single(e=>(string?)e.Attribute("xs.n")=="_filteredImage").Attribute("xs.ref")!];
   Check(resource.Descendants("file").Single().Attribute("path")!.Value==$"psd-layer-{layer:D4}.png",id+": source reference resolves to the verified PSD layer");
  }
- else Check(image.Elements("s").Single(e=>(string?)e.Attribute("xs.n")=="name").Value.StartsWith("Texture "),id+": skipped/disabled source reference still uses atlas");
+ else Check(image.Elements("s").Single(e=>(string?)e.Attribute("xs.n")=="name").Value==id,id+": unmatched source reference resolves to its own atlas crop");
  Check(extension.Elements().Single(e=>(string?)e.Attribute("xs.n")=="currentTextureInputData").Name=="CTextureInput_TextureAtlasRegion",id+": active atlas input preserved");
 }
 Console.WriteLine("PSD CHECKS PASSED");

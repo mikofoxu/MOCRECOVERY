@@ -40,12 +40,12 @@ Motion checking now also validates fade durations and event times/counts/UTF-8 b
 
 ## Verification
 
-RedFoxGirl without its original CMO3:
+Example without its original CMO3:
 - 38 meshes, 315 mesh keyforms, 829 local mesh samples.
 - 37 deformers, 206 deformer keyforms, 837 local deformer samples.
 - 12 imported physics setups compared with the supplied physics companion.
 - No checked-data mismatches; nine mesh winding-review warnings remain.
-- Six expression snapshots plus six fade previews; RedFoxGirl does not supply motion/pose fixtures, so those paths also use synthetic tests.
+- Six expression snapshots plus six fade previews; Example does not supply motion/pose fixtures, so those paths also use synthetic tests.
 - Regression checks retain stored IDs, ArtMesh-derived names, SDK 4.2 target, output paths, backups and failed-conversion protection.
 
 Deliberate corruption tests detect altered warp points, rotation angle, parent link, deformer grid access and physics scale. Synthetic companion tests cover expression fade start/midpoint/target/return, all motion segment types, unsupported motion targets, retained fade metadata and Unicode events, invalid events, multi-group pose resets, linked parts and rejection of partial pose exports. Generated review/import motions pass the motion validator. Optional PSD integration is tested separately.

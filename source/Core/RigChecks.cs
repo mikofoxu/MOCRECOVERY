@@ -42,7 +42,7 @@ public static class RigChecks
         // Stable form notes retain backend indices even after display names and stored IDs are restored.
         foreach(var source in sources)
         {
-            var form=source.Descendants("CFormGuid").FirstOrDefault();
+            var form=source.Elements().Single(e=>Name(e)=="keyforms").Descendants("CFormGuid").FirstOrDefault();
             string note=form==null?"":(string?)objects[(string)form.Attribute("xs.ref")!].Attribute("note")??"";
             var first=note.Split(' ')[0];
             if(!first.StartsWith("Deformer")||!int.TryParse(first[8..],out int index)||index<0||index>=ds.Length||!mapped.TryAdd(index,source))errors.Add("Cannot verify recovered deformer index mapping.");
@@ -70,7 +70,10 @@ public static class RigChecks
                 double scale=N(model.GetProperty("canvas").GetProperty("pixels_per_unit"));var origin=model.GetProperty("canvas").GetProperty("origin").EnumerateArray().Select(N).ToArray();
                 if(warp){Check(D(Field(source,"row").Value)==d.GetProperty("rows").GetInt32()&&D(Field(source,"col").Value)==d.GetProperty("columns").GetInt32(),label+": warp divisions differ.");}
                 else Check(Same(D(Field(source,"baseAngle").Value),N(d.GetProperty("base_angle_degrees"))),label+": base angle differs.");
-                var forms=d.GetProperty("keyforms").EnumerateArray().ToArray();var emitted=source.Descendants(warp?"CWarpDeformerForm":"CRotationDeformerForm").ToArray();
+                var forms=d.GetProperty("keyforms").EnumerateArray().ToArray();var morphIds=source.Descendants("KeyFormMorphTarget").Select(t=>Ref(t,"keyformGuid")).ToHashSet();
+                var allForms=source.Elements().Single(e=>Name(e)=="keyforms").Elements().ToArray();
+                var emitted=allForms.Where(e=>!morphIds.Contains(Ref(e,"guid"))).ToArray();
+                Check(allForms.Length==emitted.Length+morphIds.Count,label+": missing or duplicate morph forms.");
                 Check(forms.Length==emitted.Length,label+": keyform count differs.");var expected=new List<double[]>();var actual=new List<double[]>();
                 for(int f=0;f<Math.Min(forms.Length,emitted.Length);f++)
                 {

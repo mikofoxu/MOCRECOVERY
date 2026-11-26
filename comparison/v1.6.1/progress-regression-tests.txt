@@ -14,7 +14,7 @@ PASS: deformer naming result reported
 PASS: descriptive UTF-8 ID decoded exactly
 PASS: descriptive ID applied through verified index mapping
 PASS: descriptive name preserved in XML
-PASS: RedFoxGirl SDK 4.2 target restored from MOC header
+PASS: Example SDK 4.2 target restored from MOC header
 PASS: detected SDK target reported
 PASS: MOC version mapping 1
 PASS: MOC version mapping 2

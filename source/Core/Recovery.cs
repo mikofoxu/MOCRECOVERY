@@ -14,6 +14,7 @@ public sealed class Plan
     public List<string> Textures { get; } = [];
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
     public string? PsdInput { get; set; }
+    public bool MatchPsdArtwork { get; set; } = true;
     public bool InferParameterLinks { get; set; } = true;
     public List<string> Notes { get; } = [];
     public string? DisplayInfo { get; set; }
@@ -161,7 +162,7 @@ public static class Recovery
             if(plan.PsdInput!=null)
             {
                 Stage("Importing optional PSD source artwork… Large layers may take a few minutes.");
-                psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"));
+                psdResult=PsdImporter.Apply(staged,plan.PsdInput,Path.Combine(extra,"psd-source"),plan.MatchPsdArtwork,plan.Textures,Stage);
             }
             Stage("Naming deformers from ArtMeshes…");
             var deformerNames=DeformerNames.NameFromArtMeshes(staged);
@@ -169,7 +170,7 @@ public static class Recovery
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.5.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.5.1").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -189,8 +190,8 @@ public static class Recovery
             if(psdResult==null)report.AppendLine("No PSD selected. Recovery uses MOC3 and available companion files.");
             else
             {
-                report.AppendLine($"PSD raster layers: {psdResult.Layers}; source images imported: {psdResult.Imported}; unique name candidates: {psdResult.NameMatches}.");
-                report.AppendLine("PSD source images and names are available in the project. Existing mesh texture links remain on the atlas; name candidates are not pixel-verified. Unmatched artwork does not recreate omitted mesh geometry or rigging.");
+                report.AppendLine($"PSD raster layers: {psdResult.Layers}; source images imported: {psdResult.Imported}; unique name candidates: {psdResult.NameMatches}; accepted artwork-name matches: {psdResult.ArtworkMatches}.");
+                report.AppendLine("PSD source images and names are available in the project. Existing mesh texture links remain on the atlas; name-only candidates are not pixel-verified; optional artwork matches are heuristic and reported separately. Unmatched artwork does not recreate omitted mesh geometry or rigging.");
                 foreach(var note in psdResult.Notes)report.AppendLine(note);
             }
             report.AppendLine().AppendLine("VALIDATION");

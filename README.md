@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.5.0
+# MOC3 Recovery for Windows — 1.5.1
 
-Version 1.5.0 (includes the responsible-use notice and PSD limitations).
+Version 1.5.1 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -12,7 +12,7 @@ No Python, Rust, Visual Studio, or separate .NET installation is needed to run t
 1. Click **Choose .moc3…** and select the compiled model.
 2. Leave its companion files beside it, with the original folder structure. The matching `.model3.json` supplies texture paths and ordering automatically.
 3. If necessary, click **Choose textures…**, select atlas PNGs, and use Move up/down to set texture indices 0, 1, 2, etc. Missing texture pages use transparent placeholders.
-4. Optionally click **Choose optional PSD…** after selecting the model. Leave it unset if unavailable; **No PSD** clears the selection. Then leave **Rebuild linked parameter grids (inferred)** checked to combine likely paired sliders, or uncheck it for separate sliders. Click **Create .cmo3**.
+4. Optionally click **Choose optional PSD…** after selecting the model. Leave it unset if unavailable; **No PSD** clears the selection. Selecting a PSD enables and checks **Try preserving PSD layer names using artwork matching (experimental)** by default. Uncheck it to use the previous name-only behavior. Then leave **Rebuild linked parameter grids (inferred)** checked to combine likely paired sliders, or uncheck it for separate sliders. Click **Create .cmo3**.
 5. Read the report in the window. **Open folder** opens the output location.
 6. Extract `A.recovery.zip` and read `editor-import/README.txt`. Import its motions onto the recovered model’s animation track in Cubism.
 
@@ -170,3 +170,9 @@ If recovery fails, the on-screen report now includes the full exception details;
 ## Version 1.5.0 — Validation and companion import improvements
 
 Read CHANGES-1.5.0.md for the detailed changes, tests, output filenames and limits. Validation now covers warp/rotation forms and hierarchy, bounded simultaneous parameter samples and source-to-editor physics fields. Companion exports add isolated expression fade previews, complete pose-group snapshots and filtered editor motion copies. Originals remain preserved. The validation folder also contains a paired-parameter review motion and schedule when applicable. These additions do not establish rendered/runtime equivalence.
+
+## Version 1.5.1 — Optional PSD artwork matching
+
+The new checkbox is checked automatically whenever a PSD is selected and disabled without a PSD. It compares PSD layers with atlas artwork inside recovered mesh UV triangles, considering color, transparency, shape/aspect and quarter-turn rotation. Strong, distinct candidates restore mesh display names and record inferred layer associations. IDs, mesh geometry, original source pixels and atlas texture links are unchanged. Identical/weak candidates are reported without forced assignment. This does not reconnect PSD textures or recover original placement transforms.
+
+See CHANGES-1.5.1.md. Matching details are exported to editor-import/psd-source/artwork-matches.json in the recovery ZIP. The existing layers.json Match field explicitly describes the separate name-only check. PSD layers are still imported when matching is unchecked.

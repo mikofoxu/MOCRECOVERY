@@ -79,3 +79,6 @@ Measured Linux .NET 10 process peak RSS for all-layer PSD extraction: v1.4.3 3,6
 
 ## Version 1.5.0
 38 meshes / 315 keyforms / 829 mesh samples; 37 deformers / 206 keyforms / 837 deformer samples; 12 physics setups compared with companion fields. Zero checked-data mismatches; nine winding warnings remain. Corruption, companion-conversion and optional-PSD integration tests pass. See CHANGES-1.5.0.md for full scope and limitations. Windows/Cubism visual testing remains outstanding.
+
+## Version 1.5.1
+PSD artwork matching is checked by default when a PSD is selected. RedFoxGirl: 25 accepted, 3 ambiguous and 10 insufficiently close matches; ArtMesh resolves to mad sign and duplicate hair remains ambiguous. Both checkbox states, matching unit checks and recovery regression checks pass. Enabled PSD recovery peaked at 472,400 KiB RSS in Linux. IDs and atlas links remain unchanged. Windows UI/Cubism visual testing is pending. See CHANGES-1.5.1.md.

@@ -1,0 +1,16 @@
+PASS: nested groups, Unicode names and negative offsets
+PASS: raw and ZIP-prediction decoding
+PASS: matching PNG decoder preserves RGBA
+PASS: artwork matching works independently of ID/name
+PASS: identical artwork is not assigned to an arbitrary PSD layer
+PASS: unrelated artwork rejected
+PASS: fully transparent layer excluded
+PASS: quarter-turn atlas rotation accepted
+PASS: tiny layers produce finite descriptors
+PASS: PSD matching defaults on in recovery plan
+PASS: PSD import reported
+PASS: native PSD source artwork group
+PASS: original PSD preserved
+PASS: layer inventory exported
+PASS: artwork matching option controls analysis output
+PSD CHECKS PASSED

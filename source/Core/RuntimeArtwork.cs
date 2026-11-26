@@ -11,7 +11,7 @@ internal static class RuntimeArtwork
     static void Append(XElement list,XElement child){list.Add(child);list.SetAttributeValue("count",list.Elements().Count());}
 
     // Rasterize UV triangles at atlas pixel centers. Scanlines avoid a second full-size atlas buffer.
-    internal static (byte[] Data,int X,int Y,int Width,int Height)? Crop(JsonElement mesh,FileStream decoded,int width,int height)
+    internal static (byte[] Data,int X,int Y,int Width,int Height)? Crop(JsonElement mesh,FileStream decoded,int width,int height,CancellationToken token=default)
     {
         var uv=mesh.GetProperty("uvs").EnumerateArray().Select(p=>(X:p[0].GetDouble()*width,Y:p[1].GetDouble()*height)).ToArray();
         int[] indices=mesh.GetProperty("triangle_indices").EnumerateArray().Select(v=>v.GetInt32()).ToArray();
@@ -23,6 +23,7 @@ internal static class RuntimeArtwork
         var spans=new List<(int Start,int End)>?[bottom-top];
         for(int i=0;i<vertices.Length;i+=3)
         {
+            token.ThrowIfCancellationRequested();
             var a=vertices[i];var b=vertices[i+1];var c=vertices[i+2];
             int first=Math.Max(top,(int)Math.Ceiling(Math.Min(a.Y,Math.Min(b.Y,c.Y))-.5));
             int end=Math.Min(bottom,(int)Math.Ceiling(Math.Max(a.Y,Math.Max(b.Y,c.Y))-.5));
@@ -44,6 +45,7 @@ internal static class RuntimeArtwork
         if(spans.All(row=>row==null))return null;
         int w=right-left;byte[] raw=new byte[4*w];
         byte[] png=PsdReader.EncodeRows(w,bottom-top,(y,row)=>{
+            token.ThrowIfCancellationRequested();
             Array.Clear(row);
             if(spans[y]==null)return;
             decoded.Position=4L*((long)(y+top)*width+left);
@@ -53,7 +55,7 @@ internal static class RuntimeArtwork
         return(png,left,top,w,bottom-top);
     }
 
-    internal static List<string> Apply(XDocument doc,Dictionary<string,byte[]> entries,JsonElement model,IReadOnlyList<string> pages,string folder,Action<string> stage)
+    internal static List<string> Apply(XDocument doc,Dictionary<string,byte[]> entries,JsonElement model,IReadOnlyList<string> pages,string folder,Action<string> stage,CancellationToken token=default)
     {
         Directory.CreateDirectory(folder);
         var shared=doc.Root!.Element("shared")!;
@@ -70,7 +72,7 @@ internal static class RuntimeArtwork
             if(page>=pages.Count||!File.Exists(pages[page])){notes.Add($"Atlas page {page} missing; skipped {group.Count()} mesh crops.");continue;}
             using var raw=new FileStream(Path.Combine(folder,Guid.NewGuid()+".tmp"),FileMode.CreateNew,FileAccess.ReadWrite,FileShare.None,65536,FileOptions.DeleteOnClose);
             byte[] png=File.ReadAllBytes(pages[page]);int width,height;
-            try{(width,height)=PngRows.Size(png);PngRows.Read(png,(_,row)=>raw.Write(row));}
+            try{(width,height)=PngRows.Size(png);PngRows.Read(png,(_,row)=>{token.ThrowIfCancellationRequested();raw.Write(row); });}
             catch(InvalidDataException e){notes.Add($"Atlas page {page} skipped: {e.Message}");continue;}
             foreach(var mesh in group)
             {
@@ -80,7 +82,7 @@ internal static class RuntimeArtwork
                 var sourceGuid=F(input,"_modelImageGuid");string previous=Ref(sourceGuid);
                 if(!atlasImages.Contains(previous)){psd++;inventory.Add(new{id,page,source="existing source image"});continue;}
                 stage("Extracting atlas artwork: "+id);
-                var crop=Crop(mesh,raw,width,height);
+                var crop=Crop(mesh,raw,width,height,token);
                 if(crop==null){notes.Add($"Atlas crop skipped for {id}: no covered texels.");continue;}
                 var (data,x,y,w,h)=crop.Value;string file=$"atlas-mesh-{created:D4}.png";
                 var template=images[previous];var layerTemplate=objects[Ref(template.Descendants("CLayer").Single())];

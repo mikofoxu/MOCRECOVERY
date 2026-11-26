@@ -9,7 +9,7 @@ namespace MocRecovery;
 public sealed class Plan
 {
     public required string Input { get; init; }
-    public required string Output { get; init; }
+    public required string Output { get; set; }
     public string Report => Path.ChangeExtension(Output, ".recovery.txt");
     public string Backup => Path.ChangeExtension(Output, ".recovery.zip");
     public List<string> Textures { get; } = [];
@@ -121,8 +121,10 @@ public static class Recovery
     }
     public static string NaturalKey(string s)=>Regex.Replace(s,@"\d+",m=>m.Value.PadLeft(12,'0'));
 
-    public static async Task<string> ConvertAsync(Plan plan,string engine,bool overwrite,IProgress<string>? progress=null,IProgress<RecoveryProgress>? numericProgress=null)
+    public static async Task<string> ConvertAsync(Plan plan,string engine,bool overwrite,IProgress<string>? progress=null,IProgress<RecoveryProgress>? numericProgress=null,CancellationToken cancellationToken=default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        var assets=new HashSet<string>(plan.Assets,plan.Assets.Comparer);
         var conflicts=plan.Outputs.Where(File.Exists).ToArray();
         if(conflicts.Length>0 && !overwrite)throw new IOException("Output already exists: "+string.Join(", ",conflicts));
         var dir=Path.GetDirectoryName(plan.Input)!;
@@ -132,11 +134,11 @@ public static class Recovery
         Directory.CreateDirectory(temp);
         string stage="Starting recovery";
         int percent=0;
-        void SetProgress(int value,string message){percent=Math.Max(percent,Math.Clamp(value,0,100));stage=message;progress?.Report(message);numericProgress?.Report(new(percent,message));}
+        void SetProgress(int value,string message){if(value<100)cancellationToken.ThrowIfCancellationRequested();percent=Math.Max(percent,Math.Clamp(value,0,100));stage=message;progress?.Report(message);numericProgress?.Report(new(percent,message));}
         void Stage(string message)=>SetProgress(percent,message);
-        SetProgress(0,"Starting recovery…");
         try
         {
+            SetProgress(0,"Starting recovery…");
             SetProgress(3,"Reading model and reconstructing the editable rig…");
             var textures=new List<string>();var missing=new List<string>();
             // A valid transparent PNG is used at each missing index, preserving later pages.
@@ -144,7 +146,7 @@ public static class Recovery
             File.WriteAllBytes(transparent,Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg=="));
             foreach(var t in plan.Textures)
             {
-                if(File.Exists(t)){textures.Add(t);plan.Assets.Add(t);}
+                if(File.Exists(t)){textures.Add(t);assets.Add(t);}
                 else {textures.Add(transparent);missing.Add(t);}
             }
             var staged=Path.Combine(temp,"result.cmo3");var modelJson=Path.Combine(temp,"runtime.model.json");
@@ -154,7 +156,17 @@ public static class Recovery
             psi.ArgumentList.Add(job);
             using var process=Process.Start(psi)??throw new IOException("Could not start the recovery engine.");
             var stdout=process.StandardOutput.ReadToEndAsync();var stderr=process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();var output=await stdout;var error=await stderr;
+            try { await process.WaitForExitAsync(cancellationToken); }
+            catch(OperationCanceledException)
+            {
+                try { if(!process.HasExited)process.Kill(entireProcessTree:true); }
+                catch(InvalidOperationException) when(process.HasExited) {}
+                await process.WaitForExitAsync();
+                await Task.WhenAll(stdout,stderr);
+                throw;
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            var output=await stdout;var error=await stderr;
             if(process.ExitCode!=0)throw new InvalidDataException("Conversion failed. Existing outputs were not changed.\r\n"+error);
             using var summary=JsonDocument.Parse(output);var s=summary.RootElement;
             SetProgress(23,"Restoring physics and parameter groups from companion files…");
@@ -176,7 +188,7 @@ public static class Recovery
             var projectEntries=CaffArchive.Read(staged);
             var projectXml=XDocument.Load(new MemoryStream(projectEntries["main.xml"]));
             var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
-            supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage));
+            supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,cancellationToken));
             ProjectEnricher.Validate(projectXml);
             using(var xmlBytes=new MemoryStream()){projectXml.Save(xmlBytes);projectEntries["main.xml"]=xmlBytes.ToArray();}
             CaffArchive.Write(staged,projectEntries);
@@ -184,7 +196,7 @@ public static class Recovery
             var validation=RecoveryValidator.Validate(staged,Path.Combine(extra,"validation"),plan.PhysicsInfo);
             if(validation.Errors.Count>0)throw new InvalidDataException("Recovery validation failed. Existing outputs were not changed.\r\n"+string.Join("\r\n",validation.Errors));
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.7.0").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.7.1").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             report.AppendLine("RECOVERED FROM MOC3");
             foreach(var key in new[]{"parameters","deformers","meshes","parts","glues"})report.AppendLine($"{key}: {s.GetProperty(key)}");
             report.AppendLine("Geometry, triangle indices, UVs, clipping masks, keyforms, parameter bindings and deformer hierarchy are reconstructed by the engine.");
@@ -224,7 +236,7 @@ public static class Recovery
             for(int i=plan.Textures.Count;i<required;i++)report.AppendLine($"MISSING TEXTURE PAGE {i}: transparent placeholder; artwork cannot be recovered from MOC3.");
             foreach(var warning in s.GetProperty("warnings").EnumerateArray())report.AppendLine(warning.GetString());
             foreach(var suffix in new[]{".physics3.json",".exp3.json",".motion3.json",".pose3.json",".userdata3.json"})
-                if(!plan.Assets.Any(f=>f.EndsWith(suffix,StringComparison.OrdinalIgnoreCase)))
+                if(!assets.Any(f=>f.EndsWith(suffix,StringComparison.OrdinalIgnoreCase)))
                     report.AppendLine("NOT PROVIDED: "+suffix+" — no matching companion data found; it may never have existed for this model.");
             if(plan.DisplayInfo==null)report.AppendLine("No CDI display-info file: friendly parameter/part names were unavailable; runtime IDs are used.");
             report.AppendLine().AppendLine("PRESERVED AS FILES, NOT RESTORED AS NATIVE EDITOR SETTINGS");
@@ -238,27 +250,36 @@ public static class Recovery
             SetProgress(88,"Preserving companion files and writing the report…");
             var zip=Path.Combine(temp,"assets.zip");
             var generatedFiles=Directory.GetFiles(extra,"*",SearchOption.AllDirectories);
-            int savedFiles=0,totalFiles=plan.Assets.Count+generatedFiles.Length+1+(plan.PsdInput!=null?1:0);
+            int savedFiles=0,totalFiles=assets.Count+generatedFiles.Length+1+(plan.PsdInput!=null?1:0);
             void SavedFile()=>SetProgress(88+(++savedFiles)*9/Math.Max(1,totalFiles),"Preserving companion files and writing the report…");
             using(var archive=ZipFile.Open(zip,ZipArchiveMode.Create))
             {
-                foreach(var asset in plan.Assets.Order(StringComparer.OrdinalIgnoreCase))
+                async Task AddFile(string path,string entryName)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var entry=archive.CreateEntry(entryName,CompressionLevel.Optimal);
+                    using var input=File.OpenRead(path);
+                    using var outputStream=entry.Open();
+                    await input.CopyToAsync(outputStream,cancellationToken);
+                }
+                foreach(var asset in assets.Order(StringComparer.OrdinalIgnoreCase))
                 {
                     if(!File.Exists(asset)){report.AppendLine("FILE DISAPPEARED BEFORE BACKUP: "+asset);continue;}
                     var relative=Path.GetRelativePath(dir,asset);
                     if(relative.StartsWith("..") || Path.IsPathRooted(relative))relative="selected-textures/"+Guid.NewGuid().ToString("N")+"-"+Path.GetFileName(asset);
-                    archive.CreateEntryFromFile(asset,"original/"+relative.Replace('\\','/'),CompressionLevel.Optimal);
+                    await AddFile(asset,"original/"+relative.Replace('\\','/'));
                     report.AppendLine("Preserved: "+asset);SavedFile();
                 }
-                if(plan.PsdInput!=null){archive.CreateEntryFromFile(plan.PsdInput,"original/source-artwork/"+Path.GetFileName(plan.PsdInput),CompressionLevel.Optimal);SavedFile();}
+                if(plan.PsdInput!=null){await AddFile(plan.PsdInput,"original/source-artwork/"+Path.GetFileName(plan.PsdInput));SavedFile();}
                 foreach(var generated in generatedFiles)
-                {archive.CreateEntryFromFile(generated,"editor-import/"+Path.GetRelativePath(extra,generated).Replace('\\','/'),CompressionLevel.Optimal);SavedFile();}
-                archive.CreateEntryFromFile(modelJson,"recovered/runtime.model.json",CompressionLevel.Optimal);SavedFile();
+                {await AddFile(generated,"editor-import/"+Path.GetRelativePath(extra,generated).Replace('\\','/'));SavedFile();}
+                await AddFile(modelJson,"recovered/runtime.model.json");SavedFile();
             }
             var reportPath=Path.Combine(temp,"report.txt");File.WriteAllText(reportPath,report.ToString(),Encoding.UTF8);
             // Commit only after conversion, ZIP and report all succeeded. Existing files are
             // retained as uniquely named .bak files when replacement was explicitly approved.
             SetProgress(98,"Saving completed output files…");
+            cancellationToken.ThrowIfCancellationRequested();
             var pairs=new[]{(staged,plan.Output),(zip,plan.Backup),(reportPath,plan.Report)};
             var installed=new List<string>();var backups=new List<(string,string)>();
             try

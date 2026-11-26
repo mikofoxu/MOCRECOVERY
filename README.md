@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.7.0
+# MOC3 Recovery for Windows — 1.7.1
 
-Version 1.7.0 (includes the responsible-use notice and PSD limitations).
+Version 1.7.1 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -11,6 +11,8 @@ Conversion reads the selected MOC3, its runtime companions and any selected PSD.
 Cubism 4.2+ blend-shape parameter types are restored. Unconstrained warp position targets with one ordinary editing base are reconstructed from the runtime offsets and key values. The report identifies skipped constrained bindings, multi-base warps and other target types. This release focuses on warp geometry and opacity. Blend-shape color animation, hand-authored deformation paths and hidden objects omitted from the runtime require additional data.
 
 ## Run
+
+**Choose output folder…** sets the destination for the project, report and recovery ZIP for this session. **Use app folder** restores the default. **Cancel** stops an active conversion at a cancellation checkpoint and discards temporary output. Once final saving begins, the three files finish saving together.
 
 Extract the ZIP, then double-click **MocRecovery.exe**. Windows 10/11 x64.
 No Python, Rust, Visual Studio, or separate .NET installation is needed to run the bundled app.
@@ -96,7 +98,7 @@ See COMPARISON.md for remaining differences. Neither Windows GUI execution nor a
 
 ## Version 1.1.1 output location
 
-All generated files are saved beside MocRecovery.exe, using the input basename. For example, with the app in D:\data\MocRecovery and a model elsewhere, A.moc3 produces D:\data\MocRecovery\A.cmo3, A.recovery.txt and A.recovery.zip. The Open folder button opens this output directory. Texture and companion discovery still uses the input model directory. The application directory must be writable. Existing output replacement still requires confirmation and retains timestamped backups.
+By default, all generated files are saved beside MocRecovery.exe, using the input basename. For example, with the app in D:\data\MocRecovery and a model elsewhere, A.moc3 produces D:\data\MocRecovery\A.cmo3, A.recovery.txt and A.recovery.zip. The Open folder button opens this output directory. Texture and companion discovery still uses the input model directory. The selected output directory must be writable. Existing output replacement still requires confirmation and retains timestamped backups.
 
 ## Version 1.2.0 — linked parameter controls
 

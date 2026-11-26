@@ -66,6 +66,15 @@ Check(text.Contains("meshes: 38")&&text.Contains("parameters: 49")&&text.Contain
 using(var z=ZipFile.OpenRead(p.Backup)){Check(z.Entries.Any(e=>e.FullName.EndsWith(".physics3.json"))&&z.Entries.Any(e=>e.FullName.EndsWith("runtime.model.json")),"ZIP includes original settings and recovered data");}
 var hash=System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(p.Output));
 try{await Recovery.ConvertAsync(p,engine,false);throw new Exception("overwrite unexpectedly allowed");}catch(IOException){Console.WriteLine("PASS: unapproved overwrite refused");}
+using(var stop=new CancellationTokenSource())
+{
+ var previous=p.Outputs.Select(path=>System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToArray();
+ var checkpoint=new CaptureProgress(update=>{if(update.Percent==98)stop.Cancel();});
+ try{await Recovery.ConvertAsync(p,engine,true,numericProgress:checkpoint,cancellationToken:stop.Token);throw new Exception("Cancelled conversion committed.");}
+ catch(OperationCanceledException) when(stop.IsCancellationRequested){}
+ Check(p.Outputs.Select((path,i)=>System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)).SequenceEqual(previous[i])).All(ok=>ok),"cancellation before commit preserves all three files");
+ Check(!Directory.EnumerateDirectories(outputDir,".moc-recovery-*").Any(),"cancellation cleans staging directory");
+}
 var failedProgress=new List<int>();
 try{await Recovery.ConvertAsync(p,"/bin/false",true,numericProgress:new CaptureProgress(v=>failedProgress.Add(v.Percent)));throw new Exception("engine failure unexpectedly succeeded");}catch(InvalidDataException){Console.WriteLine("PASS: failed engine reported");}
 Check(!failedProgress.Contains(100),"failed conversion never reports 100 percent");

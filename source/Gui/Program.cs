@@ -32,6 +32,11 @@ public sealed class MainWindow : Form
     private readonly Label psdStatus=new(){Text="PSD: none (optional)",AutoSize=true,MaximumSize=new Size(340,0),Margin=new Padding(0,8,0,8)};
     private readonly CheckBox matchPsd=new(){Text="Try preserving PSD layer names using artwork matching (experimental)",Checked=true,Enabled=false,AutoSize=true};
     private readonly CheckBox relinkPsd=new(){Text="Attempt PSD texture relinking (Warning: Experimental)",Checked=false,Enabled=false,AutoSize=true};
+    private readonly Button chooseOutput=new(){Text="Choose output folder…",AutoSize=true};
+    private readonly Button resetOutput=new(){Text="Use app folder",AutoSize=true};
+    private readonly Button cancel=new(){Text="Cancel",Enabled=false,AutoSize=true};
+    private string outputFolder=AppContext.BaseDirectory;
+    private CancellationTokenSource? activeConversion;
     private string? psdPath;
     private Plan? plan;private bool busy;
     public MainWindow()
@@ -42,7 +47,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.7.0";
+        Text="MOC3 Recovery 1.7.1";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -71,8 +76,24 @@ public sealed class MainWindow : Form
         input.Margin=new Padding(0,0,12,0);
         fileRow.Controls.Add(input,0,0);fileRow.Controls.Add(browse,1,0);
         layout.Controls.Add(fileRow,0,1);
-        destination.Margin=new Padding(0,0,0,22);
-        layout.Controls.Add(destination,0,2);
+        var outputRow=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=3,RowCount=1};
+        outputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        outputRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        outputRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        destination.Anchor=AnchorStyles.Left|AnchorStyles.Right;
+        outputRow.Controls.Add(destination,0,0);outputRow.Controls.Add(chooseOutput,1,0);outputRow.Controls.Add(resetOutput,2,0);
+        layout.Controls.Add(outputRow,0,2);
+        SetOutputFolder(outputFolder);
+        chooseOutput.Click+=(_,_)=>{
+            using var picker=new FolderBrowserDialog{InitialDirectory=outputFolder,Description="Choose the folder for recovery outputs",UseDescriptionForTitle=true};
+            if(picker.ShowDialog(this)==DialogResult.OK)SetOutputFolder(picker.SelectedPath);
+        };
+        resetOutput.Click+=(_,_)=>SetOutputFolder(AppContext.BaseDirectory);
+        cancel.Click+=(_,_)=>{
+            cancel.Enabled=false;
+            activeConversion?.Cancel();
+            status.Text="Cancelling recovery…";
+        };
         var textureHeading=new Label(){Text="Texture PNGs — atlas order: 0, 1, 2…",
             AutoSize=true,Margin=new Padding(0,0,0,8)};
         layout.Controls.Add(textureHeading,0,3);
@@ -96,7 +117,7 @@ public sealed class MainWindow : Form
         var textureButtons=ButtonRow(selectTextures,clearTextures,up,down);
         textureButtons.Margin=new Padding(0,0,0,12);
         layout.Controls.Add(textureButtons,0,5);
-        layout.Controls.Add(ButtonRow(convert,openFolder),0,6);
+        layout.Controls.Add(ButtonRow(convert,cancel,openFolder),0,6);
         status.Margin=new Padding(0,8,0,8);layout.Controls.Add(status,0,7);
         var progressRow=new TableLayoutPanel(){Dock=DockStyle.Fill,AutoSize=true,ColumnCount=2,RowCount=1,Margin=new Padding(0,0,0,12)};
         progressRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));progressRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -134,7 +155,13 @@ public sealed class MainWindow : Form
         up.Click+=(_,_)=>MoveTexture(-1);down.Click+=(_,_)=>MoveTexture(1);convert.Click+=async(_,_)=>await RunConversion();
         openFolder.Click+=(_,_)=>{if(plan!=null)Process.Start(new ProcessStartInfo("explorer.exe"){ArgumentList={Path.GetDirectoryName(plan.Output)!},UseShellExecute=true});};
         FormClosing+=(_,e)=>{if(busy){e.Cancel=true;status.Text="Please wait for conversion to finish before closing.";}};
-        report.Text="Choose a .moc3 file. The app saves the same filename with .cmo3 beside MocRecovery.exe.\r\n\r\nThe recovery report below lists missing inputs and features that cannot be restored. The original model and detected companion files are also preserved in a recovery ZIP.\r\n\r\nAn exact original project cannot be recreated from compiled data alone.";
+        report.Text="Choose a .moc3 file. The app saves the same filename with .cmo3 in the selected output folder (the app folder by default).\r\n\r\nThe recovery report below lists missing inputs and features that cannot be restored. The original model and detected companion files are also preserved in a recovery ZIP.\r\n\r\nAn exact original project cannot be recreated from compiled data alone.";
+    }
+    private void SetOutputFolder(string folder)
+    {
+        outputFolder=Path.GetFullPath(folder);
+        if(plan!=null)plan.Output=Path.Combine(outputFolder,Path.GetFileNameWithoutExtension(plan.Input)+".cmo3");
+        destination.Text="Output: "+(plan?.Output??outputFolder);
     }
     private void ChooseModel()
     {
@@ -142,7 +169,7 @@ public sealed class MainWindow : Form
         if(dialog.ShowDialog(this)!=DialogResult.OK)return;
         try
         {
-            var next=Recovery.Inspect(dialog.FileName, AppContext.BaseDirectory);plan=next;psdPath=null;psdStatus.Text="PSD: none (optional)";matchPsd.Checked=true;matchPsd.Enabled=false;relinkPsd.Checked=false;relinkPsd.Enabled=false;input.Text=next.Input;
+            var next=Recovery.Inspect(dialog.FileName, outputFolder);plan=next;psdPath=null;psdStatus.Text="PSD: none (optional)";matchPsd.Checked=true;matchPsd.Enabled=false;relinkPsd.Checked=false;relinkPsd.Enabled=false;input.Text=next.Input;
             progress.Value=0;progressPercent.Text="0%";progress.Visible=false;progressPercent.Visible=false;
             destination.Text="Output: "+next.Output;RefreshTextures();convert.Enabled=true;openFolder.Enabled=true;
             report.Text="Ready.\r\n\r\n"+string.Join("\r\n",next.Notes)+"\r\n\r\n"+next.Assets.Count+" source/companion files found for preservation.\r\n\r\nPhysics and parameter folders will be restored from companion files when available. Other runtime settings are preserved in the recovery ZIP.";
@@ -174,6 +201,8 @@ public sealed class MainWindow : Form
         }
         plan.PsdInput=psdPath;plan.RelinkPsdTextures=psdPath!=null&&relinkPsd.Checked;relinkPsd.Enabled=false;plan.MatchPsdArtwork=psdPath!=null&&matchPsd.Checked;matchPsd.Enabled=false;
         plan.InferParameterLinks=inferLinks.Checked;inferLinks.Enabled=false;
+        using var cancellation=new CancellationTokenSource();
+        activeConversion=cancellation;cancel.Enabled=true;chooseOutput.Enabled=resetOutput.Enabled=false;
         busy=true;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=false;progress.Value=0;progressPercent.Text="0%";progress.Visible=true;progressPercent.Visible=true;
         bool acceptingProgress=true;
         var temp=Path.Combine(Path.GetTempPath(),"MocRecovery-"+Guid.NewGuid().ToString("N"));
@@ -181,16 +210,22 @@ public sealed class MainWindow : Form
         {
             Directory.CreateDirectory(temp);var engine=Path.Combine(temp,"moc-recover.exe");
             using(var resource=Assembly.GetExecutingAssembly().GetManifestResourceStream("MocRecovery.Engine.exe")??throw new IOException("The embedded recovery engine is missing."))
-            using(var file=File.Create(engine))await resource.CopyToAsync(file);
-            var updates=new Progress<RecoveryProgress>(p=>{if(!acceptingProgress)return;progress.Value=p.Percent;progressPercent.Text=p.Percent+"%";status.Text=p.Message;});
+            using(var file=File.Create(engine))await resource.CopyToAsync(file,cancellation.Token);
+            var updates=new Progress<RecoveryProgress>(p=>{if(!acceptingProgress||cancellation.IsCancellationRequested)return;if(p.Percent>=98)cancel.Enabled=false;progress.Value=p.Percent;progressPercent.Text=p.Percent+"%";status.Text=p.Message;});
             var selected=plan;
-            report.Text=await Task.Run(()=>Recovery.ConvertAsync(selected,engine,replace,numericProgress:updates));
+            report.Text=await Task.Run(()=>Recovery.ConvertAsync(selected,engine,replace,numericProgress:updates,cancellationToken:cancellation.Token));
             acceptingProgress=false;progress.Value=100;progressPercent.Text="100%";
             status.Text="Saved "+Path.GetFileName(plan.Output)+" — review the report below.";
+        }
+        catch(OperationCanceledException) when(cancellation.IsCancellationRequested)
+        {
+            acceptingProgress=false;progress.Visible=progressPercent.Visible=false;
+            status.Text="Recovery cancelled.";report.Text="Conversion cancelled. Existing output files were preserved.";
         }
         catch(Exception e){acceptingProgress=false;status.Text="Recovery failed.";report.Text="RECOVERY FAILED\r\n\r\n"+e.ToString();MessageBox.Show(this,e.Message,"Recovery failed",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally
         {
+            activeConversion=null;cancel.Enabled=false;chooseOutput.Enabled=resetOutput.Enabled=true;
             inferLinks.Enabled=true;matchPsd.Enabled=psdPath!=null;relinkPsd.Enabled=psdPath!=null&&matchPsd.Checked;busy=false;acceptingProgress=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
             try{Directory.Delete(temp,true);}catch{}
         }

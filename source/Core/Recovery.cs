@@ -14,6 +14,7 @@ public sealed class Plan
     public required string Input { get; init; }
     public required string Output { get; set; }
     public string Report => Path.Combine(Path.GetDirectoryName(Output)!, "Output.recovery.txt");
+    public string TextureReport => Path.ChangeExtension(Output, ".texture-accuracy.txt");
     public string Backup => Path.ChangeExtension(Output, ".recovery.zip");
     public List<string> Textures { get; } = [];
     public HashSet<string> Assets { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -30,7 +31,7 @@ public sealed class Plan
     public List<string> Notes { get; } = [];
     public string? DisplayInfo { get; set; }
     public string? PhysicsInfo { get; set; }
-    public string[] Outputs => [Output, Report, Backup];
+    public string[] Outputs => [Output, Report, Backup, TextureReport];
 }
 public sealed record RecoveryProgress(int Percent,string Message);
 public static class Recovery
@@ -209,6 +210,8 @@ public static class Recovery
                 : ["Deformer name guesses disabled. Existing display labels retained."];
             var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
             supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,out int skippedCrops,cancellationToken));
+            var textureReport = Path.Combine(temp,"texture-accuracy.txt");
+            File.WriteAllText(textureReport,TextureAccuracy.Apply(projectXml,recovered.RootElement,plan.Textures));
             PhysicsModelMetadata.Apply(projectXml, projectEntries);
             ProjectEnricher.Validate(projectXml);
             using(var xmlBytes=new MemoryStream()){projectXml.Save(xmlBytes);projectEntries["main.xml"]=xmlBytes.ToArray();}
@@ -220,7 +223,7 @@ public static class Recovery
             plan.WarningCount = warningCount;
             plan.CompletionSummary = $"Engine and validation warnings: {warningCount}   ·   Atlas mesh crops skipped: {skippedCrops}";
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.91").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.92").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             if (warningCount > 0)
             {
                 report.AppendLine(Plan.WarningHeading);
@@ -261,6 +264,7 @@ public static class Recovery
             report.AppendLine("Also checked UVs, triangles, clipping references/flags, culling, draw order, opacity, and physics numeric/range/particle references.");
             report.AppendLine("Not verified: world-space deformer evaluation, rendered clipping/compositing, physics simulation, or every parameter combination. Import editor-import/validation/parameter-sweep.motion3.json and parameter-pairs.motion3.json (when co-bound pairs exist) to review single and simultaneous movement visually. Pair schedule JSON identifies each segment; at most 64 pairs are included.");
             foreach(var note in deformerNames)report.AppendLine(note);
+            report.AppendLine("Texture accuracy report: "+Path.GetFileName(plan.TextureReport));
             int required=s.GetProperty("requiredTextures").GetInt32();
             report.AppendLine($"Texture pages required: {required}; supplied existing PNGs: {plan.Textures.Count(File.Exists)}.");
             report.AppendLine().AppendLine("MISSING OR UNCONFIRMED INPUTS");
@@ -316,7 +320,7 @@ public static class Recovery
             // retained as uniquely named .bak files when replacement was explicitly approved.
             SetProgress(98,"Saving completed output files…");
             cancellationToken.ThrowIfCancellationRequested();
-            var pairs=new[]{(staged,plan.Output),(zip,plan.Backup),(reportPath,plan.Report)};
+            var pairs=new[]{(staged,plan.Output),(zip,plan.Backup),(reportPath,plan.Report),(textureReport,plan.TextureReport)};
             var installed=new List<string>();var backups=new List<(string,string)>();
             try
             {

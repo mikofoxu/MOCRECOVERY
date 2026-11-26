@@ -38,6 +38,8 @@ public sealed class MainWindow : Form
     };
     private readonly Button removePsd = new() { Text = "Remove selected", Enabled = false };
     private readonly TabControl tabs = new() { Dock = DockStyle.Fill };
+    private readonly TabPage texturePage = new("Texture accuracy") { Padding = new Padding(12) };
+    private readonly TextBox textureText = new() { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, WordWrap = false, ScrollBars = ScrollBars.Both };
     private readonly TabPage reportPage = new("Recovery report") { Padding = new Padding(12) };
     private readonly TextBox fullReport = new() { Dock = DockStyle.Fill, Multiline = true,
         ReadOnly = true, WordWrap = true, ScrollBars = ScrollBars.Vertical, AccessibleName = "Full recovery report" };
@@ -61,7 +63,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.91";
+        Text="MOC3 Recovery 1.92";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -188,6 +190,7 @@ public sealed class MainWindow : Form
         viewport.Controls.Add(layout);
         recoveryPage.Controls.Add(viewport);
         tabs.TabPages.Add(recoveryPage);
+        texturePage.Controls.Add(textureText);
         Controls.Add(tabs);
 
         var reader = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, ColumnCount = 2 };
@@ -253,6 +256,8 @@ public sealed class MainWindow : Form
     }
     private void ResetReportTab()
     {
+        tabs.TabPages.Remove(texturePage);
+        textureText.Clear();
         tabs.TabPages.Remove(reportPage);
         viewReport.Visible = false;
         fullReport.Clear();
@@ -273,6 +278,8 @@ public sealed class MainWindow : Form
             label.LinkArea = warningLink;
         }
         tabs.TabPages.Add(reportPage);
+        textureText.Text = File.ReadAllText(completed.TextureReport);
+        tabs.TabPages.Add(texturePage);
         viewReport.Visible = true;
         tabs.SelectedTab = reportPage;
         fullReport.Select(0, 0);

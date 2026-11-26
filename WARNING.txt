@@ -1,5 +1,5 @@
 MOC3 RECOVERY — RESPONSIBLE USE AND DISCLAIMER
-Application version: 1.91 | Includes documentation revision 3 notices
+Application version: 1.92 | Includes documentation revision 3 notices
 
 RESPONSIBLE USE
 Use this tool responsibly and only with models, artwork, and other files that you own or have permission or another lawful basis to process. Respect creators' rights, applicable licenses, and applicable law. Do not use this tool to steal, misrepresent ownership of, or redistribute another person's work without authorization. Recovery does not grant ownership or reuse rights in the recovered content.

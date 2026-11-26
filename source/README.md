@@ -1,4 +1,6 @@
-# MOC3 Recovery for Windows — 1.91
+# MOC3 Recovery for Windows — 1.92
+
+Version 1.92 adds texture placement correction and an accuracy report. See CHANGES-1.92.md.
 
 Version 1.91 preserves each warp deformer’s transform mode. See CHANGES-1.91.md.
 

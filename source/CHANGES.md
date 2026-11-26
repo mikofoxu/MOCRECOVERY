@@ -1,3 +1,8 @@
+# MocRecovery 1.92
+
+- Rebuild out-of-tolerance ArtMesh texture reference positions from the original atlas UVs. Preserve keyed geometry.
+- Add a Texture accuracy tab and a separate per-model text report with the percentage of vertices within 0.1 atlas pixel and predicted maximum offsets before and after correction.
+
 # MocRecovery 1.91
 
 - Preserve each warp deformer’s runtime transform mode during recovery. Mixed quad and legacy warps retain their individual settings. The recovery report includes the counts for each mode.

@@ -13,7 +13,7 @@ public static class PsdTextureRelinker
     public static double[] Inverse(double[] a){double d=a[0]*a[4]-a[1]*a[3];if(!double.IsFinite(d)||Math.Abs(d)<1e-12)throw new InvalidDataException("Singular image transform.");return [a[4]/d,-a[1]/d,(a[1]*a[5]-a[4]*a[2])/d,-a[3]/d,a[0]/d,(a[3]*a[2]-a[0]*a[5])/d];}
     static (double X,double Y) Point(double[] a,double x,double y)=>(a[0]*x+a[1]*y+a[2],a[3]*x+a[4]*y+a[5]);
     static readonly string[] Fields=["m00","m01","m02","m10","m11","m12"];
-    static double[] Matrix(XElement e)=>Fields.Select(n=>D((string)e.Attribute(n)!)).ToArray();
+    internal static double[] Matrix(XElement e)=>Fields.Select(n=>D((string)e.Attribute(n)!)).ToArray();
     public static double[] Alignment(double[] source,double[] atlas,int rotation)
     {
         double[] normalize=[1/source[2],0,-source[0]/source[2],0,1/source[3],-source[1]/source[3]];

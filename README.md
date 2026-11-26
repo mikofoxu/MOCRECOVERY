@@ -1,4 +1,8 @@
-# MOC3 Recovery for Windows — 1.8.1
+# MOC3 Recovery for Windows — 1.8.3
+
+Version 1.8.3 fixes the Cancel button layout and enables experimental texture relinking by default when a PSD is attached. See CHANGES-1.8.3.md.
+
+Version 1.8.2 updates physics group recovery. See CHANGES-1.8.2.md.
 
 Version 1.8.1 adds sequential import of multiple PSD files. See CHANGES-1.8.1.md.
 
@@ -20,7 +24,7 @@ No Python, Rust, Visual Studio, or separate .NET installation is needed to run t
 1. Click **Choose .moc3…** and select the compiled model.
 2. Leave its companion files beside it, with the original folder structure. The matching `.model3.json` supplies texture paths and ordering automatically.
 3. If necessary, click **Choose textures…**, select atlas PNGs, and use Move up/down to set texture indices 0, 1, 2, etc. Missing texture pages use transparent placeholders.
-4. Select multiple PSDs together or add more from another folder. They are processed one at a time. For multiple files, look under numbered folders in `editor-import/psd-source/` and `original/source-artwork/`. Optionally click **Add PSD files…** after selecting the model. Leave it unset if unavailable; **Clear PSDs** clears the selection. Selecting a PSD enables and checks **Try preserving PSD layer names using artwork matching (experimental)** by default. Uncheck it to use the previous name-only behavior. The separate **Attempt PSD texture relinking (Warning: Experimental)** checkbox is off by default and requires a PSD plus artwork matching. Check it to attempt verified source-image links. Then leave **Rebuild linked parameter grids (inferred)** checked to combine likely paired sliders, or uncheck it for separate sliders. Click **Create .cmo3**.
+4. Select multiple PSDs together or add more from another folder. They are processed one at a time. For multiple files, look under numbered folders in `editor-import/psd-source/` and `original/source-artwork/`. Optionally click **Add PSD files…** after selecting the model. Leave it unset if unavailable; **Clear PSDs** clears the selection. Selecting a PSD enables and checks **Try preserving PSD layer names using artwork matching (experimental)** by default. Uncheck it to use the previous name-only behavior. The separate **Attempt PSD texture relinking (Warning: Experimental)** checkbox turns on with artwork matching whenever you add a new PSD. To skip relinking for this conversion, uncheck it after adding your PSDs. Then leave **Rebuild linked parameter grids (inferred)** checked to combine likely paired sliders, or uncheck it for separate sliders. Click **Create .cmo3**.
 5. Read the report in the window. **Open folder** opens the output location.
 6. Extract `A.recovery.zip` and read `editor-import/README.txt`. Import its motions onto the recovered model’s animation track in Cubism.
 

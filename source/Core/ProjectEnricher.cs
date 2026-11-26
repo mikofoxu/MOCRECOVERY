@@ -52,10 +52,26 @@ public static class ProjectEnricher
                     {notes.Add($"PHYSICS SETUP {id} NOT RESTORED: {e.Message}");}
                 }
                 var source=new XElement("CPhysicsSettingsSourceSet",N("physicsSettingsSourceSet"),List("_sourceCubismPhysics",settings));
-                if(settings.Count>0)source.Add(new XElement("CPhysicsSettingsGuid",N("selectedCubismPhysics"),new XAttribute("uuid",(string)settings[0].Element("CPhysicsSettingsGuid")!.Attribute("uuid")!)));
+                if(settings.Count>0)
+                {
+                    var guid=settings[0].Element("CPhysicsSettingsGuid")!;
+                    int next=doc.Descendants().Attributes("xs.id").Select(a=>int.Parse(a.Value.TrimStart('#'))).DefaultIfEmpty().Max()+1;
+                    string reference="#"+next;
+                    var sharedGuid=new XElement(guid);
+                    sharedGuid.Attribute("xs.n")!.Remove();
+                    sharedGuid.SetAttributeValue("xs.id",reference);
+                    int nextIndex=doc.Descendants().Attributes("xs.idx").Select(a=>(int)a).DefaultIfEmpty(-1).Max()+1;
+                    sharedGuid.SetAttributeValue("xs.idx",nextIndex);
+                    doc.Root!.Element("shared")!.Add(sharedGuid);
+                    guid.ReplaceWith(Ref("CPhysicsSettingsGuid","guid",reference));
+                    source.Add(Ref("CPhysicsSettingsGuid","selectedCubismPhysics",reference));
+                    AddPhysicsViewer(doc,model,parameterGuids);
+                }
                 else source.Add(new XElement("null",N("selectedCubismPhysics")));
                 source.Add(V("i","settingFPS",json.GetProperty("Meta").TryGetProperty("Fps",out var fps)?fps.GetDouble():30));
-                model.Elements("CPhysicsSettingsSourceSet").Remove();model.Add(source);physics=settings.Count;
+                model.Elements("CPhysicsSettingsSourceSet").Remove();
+                model.Element("CPartSourceSet")!.AddAfterSelf(source);
+                physics=settings.Count;
                 foreach(string cls in new[]{"CPhysicsController$CPhysicsSourceType","CPhysicsInput","CPhysicsOutput","CPhysicsSettingsSource","CPhysicsSettingsSourceSet","CPhysicsVertex"})Import(doc,"com.live2d.cubism.doc.gameData.physics."+cls);
                 Import(doc,"com.live2d.cubism.doc.model.id.CPhysicsSettingId");Import(doc,"com.live2d.type.CPhysicsDataGuid");Import(doc,"com.live2d.type.CPhysicsSettingsGuid");
                 if(json.GetProperty("Meta").TryGetProperty("EffectiveForces",out var forces))
@@ -76,6 +92,23 @@ public static class ProjectEnricher
         entries["main.xml"]=ms.ToArray();
         CaffArchive.Write(archivePath,entries);
         return new(physics,groups,notes,links);
+    }
+    static void AddPhysicsViewer(XDocument doc,XElement model,Dictionary<string,string> parameterGuids)
+    {
+        var anchor=model.Element("CModelInfo")!;
+        if(model.Element("CGameMotionSet")==null)
+        {
+            anchor.AddAfterSelf(new XElement("CGameMotionSet",N("gameMotionSet"),
+                List("gameMotions",Array.Empty<XElement>()),List("gameMotionGroups",Array.Empty<XElement>())));
+            Import(doc,"com.live2d.cubism.doc.gameData.motions.CGameMotionSet");
+        }
+        if(model.Element("ModelViewerSetting")!=null)return;
+        var rows=parameterGuids.Values.Select(id=>new XElement("TrackCursorSetting",
+            Ref("CParameterGuid","guid",id),new XElement("TrackCursorSettingItemType",N("value"),new XAttribute("v","NONE")),V("f","weight",1)));
+        model.Element("CGameMotionSet")!.AddAfterSelf(new XElement("ModelViewerSetting",N("modelViewerSetting"),
+            new XElement("array_list",N("trackCursorSettings"),new XAttribute("count",parameterGuids.Count),rows)));
+        foreach(var type in new[]{"ModelViewerSetting","TrackCursorSetting","TrackCursorSettingItemType"})
+            Import(doc,"com.live2d.cubism.doc.modeling.ui.viewer."+type);
     }
     static XElement Physics(JsonElement j,Dictionary<string,string> guids,string name)
     {

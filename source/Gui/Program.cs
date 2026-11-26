@@ -47,7 +47,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.8.1";
+        Text="MOC3 Recovery 1.8.3";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -98,7 +98,7 @@ public sealed class MainWindow : Form
         textures.IntegralHeight=false;textures.Margin=new Padding(0,0,0,8);
         layout.Controls.Add(textures,0,4);
 
-        foreach(var button in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})
+        foreach(var button in new[]{browse,selectTextures,clearTextures,up,down,convert,cancel,openFolder,selectPsd,clearPsd})
         {
             button.AutoSize=true;button.AutoSizeMode=AutoSizeMode.GrowAndShrink;
             button.Padding=new Padding(12,6,12,6);
@@ -147,11 +147,11 @@ public sealed class MainWindow : Form
         selectPsd.Click+=(_,_)=>{
             using var dialog=new OpenFileDialog(){Title="Add layered PSD files",Multiselect=true,Filter="Photoshop document (*.psd)|*.psd"};
             if(dialog.ShowDialog(this)!=DialogResult.OK)return;
-            bool first=psdPaths.Count==0;
+            int previousCount=psdPaths.Count;
             foreach(var path in dialog.FileNames)
                 if(!psdPaths.Contains(path,StringComparer.OrdinalIgnoreCase))psdPaths.Add(path);
             psdStatus.Text=psdPaths.Count==1?"PSD: "+Path.GetFileName(psdPaths[0]):$"{psdPaths.Count} PSDs selected";
-            if(first){matchPsd.Checked=true;relinkPsd.Checked=false;}
+            if(psdPaths.Count>previousCount){matchPsd.Checked=true;relinkPsd.Checked=true;}
             matchPsd.Enabled=true;relinkPsd.Enabled=matchPsd.Checked;
         };
         matchPsd.CheckedChanged+=(_,_)=>{if(!matchPsd.Checked)relinkPsd.Checked=false;relinkPsd.Enabled=!busy&&psdPaths.Count>0&&matchPsd.Checked;};

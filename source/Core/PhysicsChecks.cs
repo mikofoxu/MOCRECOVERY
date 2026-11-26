@@ -11,7 +11,22 @@ public static class PhysicsChecks
         try
         {
             using var doc=JsonDocument.Parse(File.ReadAllBytes(path));var original=doc.RootElement;
-            var sources=xml.Descendants("CPhysicsSettingsSource").Where(e=>e.HasElements).ToDictionary(e=>(string)e.Element("CPhysicsSettingId")!.Attribute("idstr")!);
+            var model=xml.Root?.Element("main")?.Element("CModelSource");
+            var settings=model?.Elements("CPhysicsSettingsSourceSet").SingleOrDefault(e=>(string?)e.Attribute("xs.n")=="physicsSettingsSourceSet");
+            var list=settings?.Elements("carray_list").SingleOrDefault(e=>(string?)e.Attribute("xs.n")=="_sourceCubismPhysics");
+            var sources=(list?.Elements("CPhysicsSettingsSource")??Enumerable.Empty<XElement>()).ToDictionary(e=>(string)e.Element("CPhysicsSettingId")!.Attribute("idstr")!);
+            if(sources.Count>0)
+            {
+                var selected=(string?)settings!.Element("CPhysicsSettingsGuid")?.Attribute("xs.ref");
+                if((int?)list!.Attribute("count")!=sources.Count || selected==null ||
+                    !xml.Root!.Element("shared")!.Elements("CPhysicsSettingsGuid").Any(g=>(string?)g.Attribute("xs.id")==selected &&
+                        Guid.TryParse((string?)g.Attribute("uuid"),out _) && g.Attribute("note")!=null &&
+                        int.TryParse((string?)g.Attribute("xs.idx"),out int index) && index>=0) ||
+                    sources.Values.Count(e=>(string?)e.Element("CPhysicsSettingsGuid")?.Attribute("xs.ref")==selected)!=1)
+                    errors.Add("Invalid physics group list or selected group reference.");
+            }
+            else if(xml.Descendants("CPhysicsSettingsSource").Any(e=>e.HasElements))
+                errors.Add("Physics groups are outside the model's physics group list.");
             var parameters=xml.Descendants("CParameterSource").Where(e=>e.HasElements).ToDictionary(e=>(string)e.Element("CParameterGuid")!.Attribute("xs.ref")!,e=>(string)e.Element("CParameterId")!.Attribute("idstr")!);
             XElement Field(XElement e,string n)=>e.Descendants().Single(x=>(string?)x.Attribute("xs.n")==n);
             void Equal(double a,double b,string label){if(!double.IsFinite(a)||!double.IsFinite(b)||Math.Abs(a-b)>Math.Max(0.00002,Math.Abs(a)*0.000002))errors.Add(label+": physics value differs from companion.");}

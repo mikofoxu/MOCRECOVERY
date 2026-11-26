@@ -1,3 +1,13 @@
+# MocRecovery 1.8.3
+
+- Preserve the selected physics group identifier’s note and assign its shared-object index. Validate both fields before saving a recovery.
+- Minor GUI fix: Cancel now uses the same sizing, padding, and alignment as Create .cmo3 and Open folder.
+- Experimental PSD texture relinking turns on whenever a new PSD is attached and applies to all attached PSDs.
+
+# MocRecovery 1.8.2
+
+- Fixed physics group serialization. The selected group now shares its identifier with the group list. Recovery also writes Physics window settings and validates the group list and selection.
+
 # MocRecovery 1.8.1
 
 - Add multiple optional PSDs, including files from different folders. PSDs are read one at a time. Artwork matching considers layers from all selected files before relinking. Each source has its own group, layer inventory and backup location.

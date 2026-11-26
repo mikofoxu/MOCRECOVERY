@@ -5,5 +5,5 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup><Compile Include="../Core/BlendShapes.cs" Link="BlendShapes.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Core/BlendShapes.cs" Link="BlendShapes.cs" /><Compile Include="../Core/MocIntTables.cs" Link="MocIntTables.cs" /></ItemGroup>
 </Project>

@@ -212,7 +212,9 @@ public static class Recovery
                 ? DeformerNames.NameFromArtMeshes(projectXml)
                 : ["Deformer name guesses disabled. Existing display labels retained."];
             if (plan.InferDeformerNames) deformerNames.AddRange(DeformerNames.NameMeshesFromParts(projectXml));
-            var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
+            var mocBytes=File.ReadAllBytes(plan.Input);
+            var supplemental=new BlendShapes(mocBytes).Apply(projectXml,recovered.RootElement);
+            supplemental.Add(PartLayerOrder.Restore(projectXml, recovered.RootElement, new MocIntTables(mocBytes)));
             var artworkRows = new List<ArtworkRow>();
             var artworkLinks = psdResults.SelectMany(r => r.AcceptedLinks).GroupBy(r => r.MeshId).ToDictionary(g => g.Key,g => g.Last());
             supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,out int skippedCrops,artworkRows,artworkLinks,cancellationToken));
@@ -232,7 +234,7 @@ public static class Recovery
             plan.WarningCount = warningCount;
             plan.CompletionSummary = $"Engine and validation warnings: {warningCount}   ·   Atlas mesh crops skipped: {skippedCrops}";
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v2.01").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v2.02").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             if (warningCount > 0)
             {
                 report.AppendLine(Plan.WarningHeading);

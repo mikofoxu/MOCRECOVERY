@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Globalization;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -8,23 +7,8 @@ namespace MocRecovery;
 // MOC3 4.2+ tables. A blend key stores offsets relative to the editing base.
 internal sealed class BlendShapes(byte[] bytes)
 {
-    int Word(int offset)
-    {
-        if (offset < 0 || offset > bytes.Length - 4) throw new InvalidDataException("Truncated blend shape table.");
-        var span = bytes.AsSpan(offset, 4);
-        return bytes[5] == 0 ? BinaryPrimitives.ReadInt32LittleEndian(span) : BinaryPrimitives.ReadInt32BigEndian(span);
-    }
-    int At(int slot,int index)
-    {
-        int start=Word(64+4*slot);
-        if(start<704 || index<0) throw new InvalidDataException("Invalid blend shape offset.");
-        int address=checked(start+4*index);
-        // Sections may be empty and share offsets. Limit access to the current table.
-        int next=Word(64+4*(slot+1));
-        if(next>=start && address>next-4)
-            throw new InvalidDataException("Blend shape reference exceeds its section.");
-        return Word(address);
-    }
+    private readonly MocIntTables tables = new(bytes);
+    int At(int slot,int index) => tables.At(slot,index);
     float Float(int slot,int index)
     {
         float value=BitConverter.Int32BitsToSingle(At(slot,index));

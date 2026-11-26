@@ -1,3 +1,7 @@
+# MocRecovery 2.02
+
+- Restore the front-to-back order of ArtMeshes inside each Part from the compiled draw-order groups. Overlapping meshes with equal draw order now follow the source stacking order, including lips, teeth, and the mouth interior.
+
 # MocRecovery 2.01
 
 - The optional naming pass labels generically named ArtMeshes with their owning Part name followed by the numeric suffix of their runtime ID, such as Light111. The original ID is preserved. Existing descriptive names and PSD-derived labels take precedence.

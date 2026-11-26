@@ -209,6 +209,7 @@ public static class Recovery
                 : ["Deformer name guesses disabled. Existing display labels retained."];
             var supplemental=new BlendShapes(File.ReadAllBytes(plan.Input)).Apply(projectXml,recovered.RootElement);
             supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,out int skippedCrops,cancellationToken));
+            PhysicsModelMetadata.Apply(projectXml, projectEntries);
             ProjectEnricher.Validate(projectXml);
             using(var xmlBytes=new MemoryStream()){projectXml.Save(xmlBytes);projectEntries["main.xml"]=xmlBytes.ToArray();}
             CaffArchive.Write(staged,projectEntries);
@@ -219,7 +220,7 @@ public static class Recovery
             plan.WarningCount = warningCount;
             plan.CompletionSummary = $"Engine and validation warnings: {warningCount}   ·   Atlas mesh crops skipped: {skippedCrops}";
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v1.8.6").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v1.9").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             if (warningCount > 0)
             {
                 report.AppendLine(Plan.WarningHeading);

@@ -1,3 +1,8 @@
+# MocRecovery 1.9
+
+- Write editor model settings alongside recovered physics groups, including the shared root parameter group, model options, effect settings, guides, brush settings and random-pose defaults. Generate transparent placeholder model icons.
+- Build these fields from conversion data. An original editor project is never required. Models with imported physics and no CDI group definitions receive a root parameter group.
+
 # MocRecovery 1.8.6
 
 - Decode non-interlaced indexed PNG atlases at 1, 2, 4 and 8 bits per pixel for ArtMesh crops and PSD artwork matching. Palette alpha values are preserved, including partial transparency. Palette entries without an alpha value are opaque.

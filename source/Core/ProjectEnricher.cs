@@ -84,6 +84,11 @@ public static class ProjectEnricher
             catch(Exception e) when(e is JsonException or InvalidDataException or KeyNotFoundException or InvalidOperationException or ArgumentException)
             {notes.Add("PHYSICS IMPORT INCOMPLETE: "+e.Message);}
         }
+        if (physics > 0 && !model.Element("CParameterGroupSet")!.Descendants("CParameterGroup").Any(g => g.HasElements))
+        {
+            using var fallback = JsonDocument.Parse("""{"ParameterGroups":[],"Parameters":[]}""");
+            AddGroups(doc, model, parameters, fallback.RootElement);
+        }
         var links=plan.InferParameterLinks ? InferLinks(doc,parameters,entries["moc2cmo.model.json"]) : new List<string>();
         if(plan.InferParameterLinks)notes.Add("Linked parameter controls are inferred from adjacent parameters sharing a two-axis keyform grid. Original Editor linking choices are not stored in MOC3; additional or missing links are possible.");
         Validate(doc);

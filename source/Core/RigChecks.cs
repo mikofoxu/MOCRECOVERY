@@ -50,7 +50,7 @@ public static class RigChecks
         Check(mapped.Count==ds.Length,"Deformer source count differs.");
         var root=xml.Descendants("CDeformerGuid").Single(e=>(string?)e.Attribute("note")=="ROOT");string rootGuid=(string)root.Attribute("xs.id")!;
         string Parent(JsonElement d)=>d.GetProperty("parent_deformer_index").ValueKind==JsonValueKind.Null?rootGuid:Ref(mapped[d.GetProperty("parent_deformer_index").GetInt32()],"guid");
-        var parameterIds=xml.Descendants("CParameterSource").Where(e=>e.HasElements).ToDictionary(e=>(string)e.Element("CParameterGuid")!.Attribute("xs.ref")!,e=>(string)e.Element("CParameterId")!.Attribute("idstr")!);
+        var parameterIds=PhysicsModelMetadata.ParameterIds(xml);
         foreach(var mesh in model.GetProperty("art_meshes").EnumerateArray())
         {
             var id=mesh.GetProperty("id").GetString();var source=xml.Descendants("CArtMeshSource").SingleOrDefault(e=>e.HasElements&&(string?)e.Descendants("CDrawableId").Single().Attribute("idstr")==id);

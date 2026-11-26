@@ -27,7 +27,7 @@ public static class PhysicsChecks
             }
             else if(xml.Descendants("CPhysicsSettingsSource").Any(e=>e.HasElements))
                 errors.Add("Physics groups are outside the model's physics group list.");
-            var parameters=xml.Descendants("CParameterSource").Where(e=>e.HasElements).ToDictionary(e=>(string)e.Element("CParameterGuid")!.Attribute("xs.ref")!,e=>(string)e.Element("CParameterId")!.Attribute("idstr")!);
+            var parameters=PhysicsModelMetadata.ParameterIds(xml);
             XElement Field(XElement e,string n)=>e.Descendants().Single(x=>(string?)x.Attribute("xs.n")==n);
             void Equal(double a,double b,string label){if(!double.IsFinite(a)||!double.IsFinite(b)||Math.Abs(a-b)>Math.Max(0.00002,Math.Abs(a)*0.000002))errors.Add(label+": physics value differs from companion.");}
             double N(JsonElement j)=>CompanionExporter.Number(j);

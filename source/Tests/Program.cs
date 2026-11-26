@@ -24,8 +24,9 @@ Check(text.Contains("Native physics setups restored: 12") && text.Contains("Nati
 var archiveData=CaffArchive.Read(p.Output);
 var xml=System.Xml.Linq.XDocument.Load(new MemoryStream(archiveData["main.xml"]));
 ProjectEnricher.Validate(xml);
+var parameterIds=PhysicsModelMetadata.ParameterIds(xml);
 var blendParameters=xml.Descendants("CParameterSource").Where(e=>e.HasElements&&(string?)e.Element("Type")?.Attribute("v")=="MORPH_TARGET")
-    .ToDictionary(e=>(string)e.Element("CParameterGuid")!.Attribute("xs.ref")!,e=>(string)e.Element("CParameterId")!.Attribute("idstr")!);
+    .ToDictionary(e=>(string)e.Element("CParameterGuid")!.Attribute("xs.ref")!,e=>parameterIds[(string)e.Element("CParameterGuid")!.Attribute("xs.ref")!]);
 Check(blendParameters.Count==5,"runtime distinguishes five blend shape sliders");
 var lip=xml.Descendants("CWarpDeformerSource").Single(e=>e.HasElements&&(string?)e.Descendants("CDeformerId").Single().Attribute("idstr")=="Warp6");
 var endpoints=lip.Descendants("KeyFormMorphTarget").Select(t=>(blendParameters[(string)t.Element("CParameterGuid")!.Attribute("xs.ref")!],t.Element("f")!.Value)).ToArray();
@@ -95,7 +96,7 @@ Check(Path.GetDirectoryName(p.Report)==outputDir && Path.GetDirectoryName(p.Back
 Check(!File.Exists(Path.Combine(dir,"Example.cmo3")),"no generated CMO3 in input folder");
 Check(Path.GetDirectoryName(Recovery.Inspect(model).Output)==Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory),"default output uses executable base directory");
 Check(text.Contains("Inferred linked parameter pairs: 12"),"twelve inferred pairs reported");
-var linked=xml.Descendants("CParameterSource").Where(e=>e.HasElements && e.Elements("b").Any(b=>(string?)b.Attribute("xs.n")=="combined" && b.Value=="true")).Select(e=>(string)e.Element("CParameterId")!.Attribute("idstr")!).ToHashSet();
+var linked=xml.Descendants("CParameterSource").Where(e=>e.HasElements && e.Elements("b").Any(b=>(string?)b.Attribute("xs.n")=="combined" && b.Value=="true")).Select(e=>parameterIds[(string)e.Element("CParameterGuid")!.Attribute("xs.ref")!]).ToHashSet();
 var expected=new[]{"ParamAngleX","ParamEyeBallX","ParamBrowLX","ParamBrowRX","ParamBrowLAngle","ParamBrowRAngle","ParamMouthForm","Param2","Param4","Param6","Param10","ParamBodyAngleX"};
 Check(linked.SetEquals(expected),"expected linked controls, including inferred body pair");
 p.InferParameterLinks=false;

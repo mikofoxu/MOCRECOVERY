@@ -18,7 +18,7 @@ public static class RecoveryValidator
         var meshes=model.GetProperty("art_meshes").EnumerateArray().ToArray();var bands=model.GetProperty("binding_bands").EnumerateArray().ToArray();
         var parameters=model.GetProperty("parameters").EnumerateArray().ToArray();
         var objects=xml.Descendants().Where(e=>e.Attribute("xs.id")!=null).ToDictionary(e=>(string)e.Attribute("xs.id")!);
-        var parameterGuids=xml.Descendants("CParameterSource").Where(e=>e.HasElements).ToDictionary(e=>(string)e.Element("CParameterGuid")!.Attribute("xs.ref")!,e=>(string)e.Element("CParameterId")!.Attribute("idstr")!);
+        var parameterGuids=PhysicsModelMetadata.ParameterIds(xml);
         var sources=xml.Descendants("CArtMeshSource").Where(e=>e.HasElements).ToDictionary(e=>(string)e.Descendants("CDrawableId").Single().Attribute("idstr")!);
         var guids=sources.ToDictionary(p=>(string)p.Value.Descendants("CDrawableGuid").First(e=>Name(e)=="guid").Attribute("xs.ref")!,p=>p.Key);
         var canvas=model.GetProperty("canvas");double scale=N(canvas.GetProperty("pixels_per_unit"));var origin=canvas.GetProperty("origin").EnumerateArray().Select(N).ToArray();

@@ -1,4 +1,6 @@
-# MOC3 Recovery for Windows — 1.8.6
+# MOC3 Recovery for Windows — 1.9
+
+Version 1.9 includes editor metadata for recovered physics. See CHANGES-1.9.md.
 
 Version 1.8.6 adds indexed PNG atlas support for mesh crops and PSD matching. See CHANGES-1.8.6.md.
 

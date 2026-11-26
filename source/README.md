@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.6.1
+# MOC3 Recovery for Windows — 1.6.2
 
-Version 1.6.1 (includes the responsible-use notice and PSD limitations).
+Version 1.6.2 (includes the responsible-use notice and PSD limitations).
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 
@@ -186,3 +186,7 @@ This is source relinking, not an immediate switch to PSD rendering or an atlas r
 ## Version 1.6.1 — Percentage progress
 
 Conversion now shows a filled progress bar with a numeric percentage. It advances by recovery stage, PSD layer, experimental link candidate and archived file. These are weighted stage estimates, not elapsed-time estimates; the percentage can pause while a large item or the backend engine is processing. There is no timer-based simulated progress. It reaches 100% only after output files are successfully installed. A failure retains the last percentage with the error report. Selecting another model clears the previous progress; starting a conversion resets it to 0%.
+
+## Version 1.6.2 — Maximized startup
+
+The application opens maximized by default. Standard title-bar controls remain available to restore, minimize or close the window. Recovery behavior is unchanged.

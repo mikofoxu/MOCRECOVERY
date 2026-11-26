@@ -42,10 +42,11 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 1.6.1";
+        Text="MOC3 Recovery 1.6.2";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
+        WindowState=FormWindowState.Maximized;
 
         var viewport=new Panel(){Dock=DockStyle.Fill,AutoScroll=true};
         var layout=new TableLayoutPanel(){Dock=DockStyle.Fill,Padding=new Padding(24),

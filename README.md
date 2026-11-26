@@ -1,6 +1,6 @@
-# MOC3 Recovery for Windows — 1.8
+# MOC3 Recovery for Windows — 1.8.1
 
-Version 1.8 (includes the responsible-use notice and PSD limitations).
+Version 1.8.1 adds sequential import of multiple PSD files. See CHANGES-1.8.1.md.
 
 Read `WARNING.txt` for responsible-use guidance, the misuse disclaimer, and the scope of the Live2D-code audit.
 

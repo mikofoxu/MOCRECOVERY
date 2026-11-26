@@ -1,6 +1,8 @@
-# MocRecovery 1.8
+# MocRecovery 1.8.1
 
 - Add multiple optional PSDs, including files from different folders. PSDs are read one at a time. Artwork matching considers layers from all selected files before relinking. Each source has its own group, layer inventory and backup location.
+
+# MocRecovery 1.8
 
 - Added “Guess deformer names from ArtMeshes (experimental)”, enabled by default. A placeholder deformer ID can take a unique mesh label when it directly controls artwork and all controlled meshes agree. Shared candidates, existing labels and descriptive IDs are protected. Clearing the option keeps the stored labels. See Output.recovery.txt for individual decisions.
 

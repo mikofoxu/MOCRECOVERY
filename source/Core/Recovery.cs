@@ -25,6 +25,8 @@ public sealed class Plan
         get=>PsdInputs.FirstOrDefault();
         set { PsdInputs.Clear();if(value!=null)PsdInputs.Add(value); }
     }
+    public bool BuildWorkingPsd { get; set; }
+    public string WorkingPsd => Path.ChangeExtension(Output,".working.psd");
     public bool RelinkPsdTextures { get; set; }
     public bool MatchPsdArtwork { get; set; } = true;
     public bool InferDeformerNames { get; set; } = true;
@@ -34,7 +36,7 @@ public sealed class Plan
     public IReadOnlyList<ArtworkRow> Artwork { get; internal set; } = [];
     public PhysicsReport? AppliedPhysics { get; internal set; }
     public string? PhysicsInfo { get; set; }
-    public string[] Outputs => [Output, Report, Backup, TextureReport];
+    public string[] Outputs => BuildWorkingPsd ? [Output, Report, Backup, TextureReport, WorkingPsd] : [Output, Report, Backup, TextureReport];
 }
 public sealed record RecoveryProgress(int Percent,string Message);
 public static class Recovery
@@ -218,6 +220,13 @@ public static class Recovery
             var artworkRows = new List<ArtworkRow>();
             var artworkLinks = psdResults.SelectMany(r => r.AcceptedLinks).GroupBy(r => r.MeshId).ToDictionary(g => g.Key,g => g.Last());
             supplemental.AddRange(RuntimeArtwork.Apply(projectXml,projectEntries,recovered.RootElement,plan.Textures,Path.Combine(extra,"atlas-artwork"),Stage,out int skippedCrops,artworkRows,artworkLinks,cancellationToken));
+            string stagedPsd=Path.Combine(temp,"working.psd");
+            if(plan.BuildWorkingPsd)
+            {
+                Stage("Building layered working PSD…");
+                supplemental.AddRange(LayeredPsd.Build(stagedPsd,projectXml,recovered.RootElement,plan.Textures,Stage,cancellationToken));
+                supplemental.Add("Working PSD output: "+plan.WorkingPsd);
+            }
             plan.Artwork=artworkRows;
             var textureReport = Path.Combine(temp,"texture-accuracy.txt");
             plan.TextureMeasurements = TextureAccuracy.Apply(projectXml,recovered.RootElement,plan.Textures);
@@ -234,7 +243,7 @@ public static class Recovery
             plan.WarningCount = warningCount;
             plan.CompletionSummary = $"Engine and validation warnings: {warningCount}   ·   Atlas mesh crops skipped: {skippedCrops}";
             var report=new StringBuilder();
-            report.AppendLine("MOC3 RECOVERY REPORT — v2.02").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
+            report.AppendLine("MOC3 RECOVERY REPORT — v2.0.3").AppendLine("Input: "+plan.Input).AppendLine("Output: "+plan.Output).AppendLine();
             if (warningCount > 0)
             {
                 report.AppendLine(Plan.WarningHeading);
@@ -331,7 +340,8 @@ public static class Recovery
             // retained as uniquely named .bak files when replacement was explicitly approved.
             SetProgress(98,"Saving completed output files…");
             cancellationToken.ThrowIfCancellationRequested();
-            var pairs=new[]{(staged,plan.Output),(zip,plan.Backup),(reportPath,plan.Report),(textureReport,plan.TextureReport)};
+            var pairs=new List<(string,string)>{(staged,plan.Output),(zip,plan.Backup),(reportPath,plan.Report),(textureReport,plan.TextureReport)};
+            if(plan.BuildWorkingPsd)pairs.Add((stagedPsd,plan.WorkingPsd));
             var installed=new List<string>();var backups=new List<(string,string)>();
             try
             {

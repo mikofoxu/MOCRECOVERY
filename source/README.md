@@ -1,4 +1,6 @@
-# MOC3 Recovery for Windows — 2.02
+# MOC3 Recovery for Windows — 2.0.3
+
+Select **Build layered working PSD (experimental)** before conversion to save a new .working.psd beside the .cmo3. Each available ArtMesh is sampled from its atlas into default-pose canvas coordinates and organized by recovered Part. Mesh opacity is editable. Missing textures and meshes outside the canvas are listed in the report. The working document uses normal blending and Part stacking; dynamic clipping, inherited opacity, effects and original PSD structure are not recreated. Large canvases require additional RAM and disk space.
 
 Version 2.02 restores ArtMesh stacking within each Part using the compiled draw-order groups. See [CHANGES.md](../CHANGES.md).
 

@@ -1,3 +1,7 @@
+# MocRecovery 2.0.3
+
+- Added an experimental layered working PSD export from the compiled model and its texture atlas PNGs. Enable it in the recovery options to save a separate .working.psd beside the recovered project.
+
 # MocRecovery 2.02
 
 - Restore the front-to-back order of ArtMeshes inside each Part from the compiled draw-order groups. Overlapping meshes with equal draw order now follow the source stacking order, including lips, teeth, and the mouth interior.

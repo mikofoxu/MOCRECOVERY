@@ -10,6 +10,7 @@ using(var fixture=new PsdReader(Path.Combine(AppContext.BaseDirectory,"grouped.p
  Check(fixture.Png(leaf).Length>0&&fixture.Png(fixture.Layers.Single(l=>l.Name=="Raw")).Length>0,"raw and ZIP-prediction decoding");
 }
 ArtworkChecks.Run();
+WorkingPsdChecks.Run();
 IndexedAtlasChecks.Run();
 RelinkChecks.Run();
 if(args.Length==3)

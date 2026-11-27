@@ -27,6 +27,7 @@ public sealed class MainWindow : Form
     private readonly ProgressBar progress=new(){Dock=DockStyle.Fill,Visible=false,Style=ProgressBarStyle.Continuous};
     private readonly Label progressPercent=new(){Text="0%",AutoSize=true,Visible=false,Anchor=AnchorStyles.Left,Margin=new Padding(10,0,0,0)};
     private readonly CheckBox inferDeformerNames=new(){Text="Infer mesh and deformer names (experimental)",Checked=true,AutoSize=true};
+    private readonly CheckBox buildPsd=new(){Text="Build layered working PSD (experimental)",AutoSize=true};
     private readonly CheckBox inferLinks=new(){Text="Rebuild linked parameter grids (inferred)",Checked=true,AutoSize=true};
     private readonly Button selectPsd=new(){Text="Add PSD files…",AutoSize=true};
     private readonly Button clearPsd=new(){Text="Clear PSDs",AutoSize=true};
@@ -80,7 +81,7 @@ public sealed class MainWindow : Form
         AutoScaleDimensions=new SizeF(96F,96F);
         AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10F);
-        Text="MOC3 Recovery 2.02";
+        Text="MOC3 Recovery 2.0.3";
         ClientSize=new Size(960,870);
         MinimumSize=new Size(780,700);
         StartPosition=FormStartPosition.CenterScreen;
@@ -161,12 +162,14 @@ public sealed class MainWindow : Form
         layout.Controls.Add(ButtonRow(selectPsd, removePsd, clearPsd), 0, 7);
 
         var options = new TableLayoutPanel { AutoSize = true, Dock = DockStyle.Fill,
-            ColumnCount = 2, RowCount = 2, Margin = new Padding(0, 0, 0, 8) };
+            ColumnCount = 2, RowCount = 3, Margin = new Padding(0, 0, 0, 8) };
         for (int i = 0; i < 2; i++)
         {
             options.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             options.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         }
+        options.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        options.Controls.Add(buildPsd, 0, 2);
         options.Controls.Add(matchPsd, 0, 0);
         options.Controls.Add(relinkPsd, 0, 1);
         options.Controls.Add(inferLinks, 1, 0);
@@ -415,6 +418,7 @@ public sealed class MainWindow : Form
     private async Task RunConversion()
     {
         if(plan==null||busy)return;
+        plan.BuildWorkingPsd=buildPsd.Checked;
         var existing=plan.Outputs.Where(File.Exists).ToArray();bool replace=false;
         if(existing.Length>0)
         {
@@ -423,6 +427,7 @@ public sealed class MainWindow : Form
         }
         ResetReportTab();
         var psdPaths = psdList.Items.Cast<ListViewItem>().Select(item => item.Name).ToList();
+        buildPsd.Enabled=false;
         plan.PsdInputs.Clear();plan.PsdInputs.AddRange(psdPaths);plan.RelinkPsdTextures=psdPaths.Count>0&&relinkPsd.Checked;relinkPsd.Enabled=false;plan.MatchPsdArtwork=psdPaths.Count>0&&matchPsd.Checked;matchPsd.Enabled=false;
         plan.InferDeformerNames=inferDeformerNames.Checked;inferDeformerNames.Enabled=false;
         plan.InferParameterLinks=inferLinks.Checked;inferLinks.Enabled=false;
@@ -451,7 +456,7 @@ public sealed class MainWindow : Form
         finally
         {
             activeConversion=null;cancel.Enabled=false;chooseOutput.Enabled=true;
-            inferDeformerNames.Enabled=true;inferLinks.Enabled=true;busy=false;acceptingProgress=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
+            buildPsd.Enabled=true;inferDeformerNames.Enabled=true;inferLinks.Enabled=true;busy=false;acceptingProgress=false;foreach(var b in new[]{browse,selectTextures,clearTextures,up,down,convert,openFolder,selectPsd,clearPsd})b.Enabled=true;
             UpdatePsdControls();
             try{Directory.Delete(temp,true);}catch{}
         }
